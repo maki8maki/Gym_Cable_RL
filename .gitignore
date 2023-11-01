@@ -1,0 +1,9 @@
+# for stl file
+*.stl
+*.obj
+
+# for imported python file
+*.pyc
+
+# for mujoco error file
+MUJOCO_LOG.TXT
