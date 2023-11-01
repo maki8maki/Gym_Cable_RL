@@ -1,53 +1,53 @@
 <mujoco>
-    <body mocap="true" name="mz04:mocap" pos="0 0 0"></body>
+    <body mocap="true" name="robot:mocap" pos="0 0 0"></body>
 
-    <body childclass="mz04" name="mz04:base" pos="0 0 0">
+    <body childclass="mz04" name="robot:base" pos="0 0 0">
         <inertial diaginertia="0.03 0.03 0.03" mass="0.1" pos="0 0 0"></inertial>
         <geom mesh="MZ04-01_BASE" class="visual"></geom>
-        <geom mesh="mz04:base_link" name="mz04:base"></geom>
-        <body name="mz04:j1_link" pos="0 0 0">
+        <geom mesh="robot:base_link" name="robot:base"></geom>
+        <body name="robot:j1_link" pos="0 0 0">
             <inertial diaginertia="0.03 0.03 0.03" mass="0.1" pos="0 0 0.17"></inertial>
-            <joint axis="0 0 1" name="mz04:j1_joint" pos="0 0 0.17"></joint>
+            <joint axis="0 0 1" name="robot:j1_joint" pos="0 0 0.17"></joint>
             <geom mesh="MZ04-01_J1" class="visual"></geom>
-            <geom mesh="mz04:j1_link" name="mz04:j1_link"></geom>
-            <body name="mz04:j2_link" pos="0 0 0">
+            <geom mesh="robot:j1_link" name="robot:j1_link"></geom>
+            <body name="robot:j2_link" pos="0 0 0">
                 <inertial diaginertia="0.03 0.03 0.03" mass="0.1" pos="0 0 0.34"></inertial>
-                <joint axis="0 -1 0" name="mz04:j2_joint" pos="0 0 0.34" ref="1.57079633"></joint>
+                <joint axis="0 -1 0" name="robot:j2_joint" pos="0 0 0.34" ref="1.57079633"></joint>
                 <geom mesh="MZ04-01_J2" class="visual"></geom>
-                <geom mesh="mz04:j2_link" name="mz04:j2_link"></geom>
-                <body name="mz04:j3_link" pos="0 0 0">
+                <geom mesh="robot:j2_link" name="robot:j2_link"></geom>
+                <body name="robot:j3_link" pos="0 0 0">
                     <inertial diaginertia="0.03 0.03 0.03" mass="0.1" pos="0 0 0.6"></inertial>
-                    <joint axis="0 -1 0" name="mz04:j3_joint" pos="0 0 0.6"></joint>
+                    <joint axis="0 -1 0" name="robot:j3_joint" pos="0 0 0.6"></joint>
                     <geom mesh="MZ04-01_J3" class="visual"></geom>
-                    <geom mesh="mz04:j3_link" name="mz04:j3_link"></geom>
-                    <body name="mz04:j4_link" pos="0 0 0">
+                    <geom mesh="robot:j3_link" name="robot:j3_link"></geom>
+                    <body name="robot:j4_link" pos="0 0 0">
                         <inertial diaginertia="0.03 0.03 0.03" mass="0.1" pos="0.08 0 0.625"></inertial>
-                        <joint axis="1 0 0" name="mz04:j4_joint" pos="0.08 0 0.625"></joint>
+                        <joint axis="1 0 0" name="robot:j4_joint" pos="0.08 0 0.625"></joint>
                         <geom mesh="MZ04-01_J4" class="visual"></geom>
-                        <geom mesh="mz04:j4_link" name="mz04:j4_link"></geom>
-                        <body name="mz04:j5_link" euler="0 1.57079633 0" pos="0 0 0">
+                        <geom mesh="robot:j4_link" name="robot:j4_link"></geom>
+                        <body name="robot:j5_link" euler="0 1.57079633 0" pos="0 0 0">
                             <inertial diaginertia="0.03 0.03 0.03" mass="0.1" pos="-0.625 0 0.28"></inertial>
-                            <joint axis="0 -1 0" name="mz04:j5_joint" pos="-0.625 0 0.28" ref="-1.57079633"></joint>
+                            <joint axis="0 -1 0" name="robot:j5_joint" pos="-0.625 0 0.28" ref="-1.57079633"></joint>
                             <geom mesh="MZ04-01_J5" class="visual" pos="-0.905 0 -0.345"></geom>
-                            <geom mesh="mz04:j5_link" name="mz04:j5_link" pos="-0.905 0 -0.345"></geom>
-                            <body name="mz04:j6_link" pos="0 0 0">
+                            <geom mesh="robot:j5_link" name="robot:j5_link" pos="-0.905 0 -0.345"></geom>
+                            <body name="robot:j6_link" pos="0 0 0">
                                 <inertial diaginertia="0.03 0.03 0.03" mass="0.1" pos="-0.555 0 0.28"></inertial>
-                                <joint axis="1 0 0" name="mz04:j6_joint" pos="-0.555 0 0.28"></joint>
+                                <joint axis="1 0 0" name="robot:j6_joint" pos="-0.555 0 0.28"></joint>
                                 <geom mesh="MZ04-01_J6" class="visual" pos="-0.905 0 -0.345"></geom>
-                                <geom mesh="mz04:j6_link" name="mz04:j6_link" pos="-0.905 0 -0.345"></geom>
-                                <body name="mz04:end_effector_link" pos="-0.52 0 0.25" euler="0 0 0">
-                                    <body name="mz04:camera" pos="0.03 0 0.09">
+                                <geom mesh="robot:j6_link" name="robot:j6_link" pos="-0.905 0 -0.345"></geom>
+                                <body name="robot:end_effector_link" pos="-0.52 0 0.25" euler="0 0 0">
+                                    <body name="robot:camera" pos="0.03 0 0.09">
                                         <inertial diaginertia="0.0 0.0 0.0" mass="0" pos="0 0 0"></inertial>
-                                        <camera name="mz04:camera" pos="0.01 0 0" euler="0 0 -1.57079633"></camera>
-                                        <geom type="box" name="mz04:camera" size="0.021 0.021 0.0115" pos="0 0 -0.0115" rgba="1 0 0 1"></geom>
+                                        <camera name="robot:camera" pos="0.01 0 0" euler="0 0 -1.57079633"></camera>
+                                        <geom type="box" name="robot:camera" size="0.021 0.021 0.0115" pos="0 0 -0.0115" rgba="1 0 0 1"></geom>
                                     </body>
-                                    <body name="mz04:end_effector" pos="0 0 -0.02">
+                                    <body name="robot:end_effector" pos="0 0 -0.02">
                                         <inertial diaginertia="0.0 0.0 0.0" mass="0" pos="0 0 0"></inertial>
                                         <geom type="cylinder" size="0.004 0.003" pos="0.006 0 0" class="end_effector"></geom>
                                         <geom type="cylinder" size="0.004 0.003" pos="-0.006 0 0" class="end_effector"></geom>
                                         <geom type="box" size="0.006 0.004 0.003" pos="0 0 0" class="end_effector"></geom>
-                                        <site name="mz04:end_effector" pos="0 0 -0.003" rgba="0 0 0 0" size="0.002"></site>
-                                        <body name="mz04:ee_adhesion" pos="0 0 -0.003">
+                                        <site name="robot:end_effector" pos="0 0 -0.003" rgba="0 0 0 0" size="0.002"></site>
+                                        <body name="robot:ee_adhesion" pos="0 0 -0.003">
                                             <geom type="box" size="0.002 0.002 0.002" pos="0 0 0.002" class="end_effector"></geom>
                                         </body>
                                     </body>

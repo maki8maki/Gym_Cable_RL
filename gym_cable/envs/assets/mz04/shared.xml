@@ -23,13 +23,13 @@
     <asset>
         <material name="floor_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.2 0.2 0.2 1"></material>
 
-        <mesh file="MZ04-01_BASE.stl" name="mz04:base_link"></mesh>
-        <mesh file="MZ04-01_J1.stl" name="mz04:j1_link"></mesh>
-        <mesh file="MZ04-01_J2.stl" name="mz04:j2_link"></mesh>
-        <mesh file="MZ04-01_J3.stl" name="mz04:j3_link"></mesh>
-        <mesh file="MZ04-01_J4.stl" name="mz04:j4_link"></mesh>
-        <mesh file="MZ04-01_J5.stl" name="mz04:j5_link"></mesh>
-        <mesh file="MZ04-01_J6.stl" name="mz04:j6_link"></mesh>
+        <mesh file="MZ04-01_BASE.stl" name="robot:base_link"></mesh>
+        <mesh file="MZ04-01_J1.stl" name="robot:j1_link"></mesh>
+        <mesh file="MZ04-01_J2.stl" name="robot:j2_link"></mesh>
+        <mesh file="MZ04-01_J3.stl" name="robot:j3_link"></mesh>
+        <mesh file="MZ04-01_J4.stl" name="robot:j4_link"></mesh>
+        <mesh file="MZ04-01_J5.stl" name="robot:j5_link"></mesh>
+        <mesh file="MZ04-01_J6.stl" name="robot:j6_link"></mesh>
 
         <mesh file="MZ04-01_BASE.obj"></mesh>
         <mesh file="MZ04-01_J1.obj"></mesh>
@@ -41,15 +41,15 @@
     </asset>
 
     <equality>
-        <weld body1="mz04:mocap" body2="mz04:ee_adhesion" solimp="0.9 0.95 0.001" solref="0.02 1"></weld>
+        <weld body1="robot:mocap" body2="robot:ee_adhesion" solimp="0.9 0.95 0.001" solref="0.02 1"></weld>
     </equality>
 
     <contact>
-        <exclude body1="mz04:base" body2="mz04:j1_link"></exclude>
-        <exclude body1="mz04:j1_link" body2="mz04:j2_link"></exclude>
-        <exclude body1="mz04:j2_link" body2="mz04:j3_link"></exclude>
-        <exclude body1="mz04:j3_link" body2="mz04:j4_link"></exclude>
-        <exclude body1="mz04:j4_link" body2="mz04:j5_link"></exclude>
-        <exclude body1="mz04:j5_link" body2="mz04:j6_link"></exclude>
+        <exclude body1="robot:base" body2="robot:j1_link"></exclude>
+        <exclude body1="robot:j1_link" body2="robot:j2_link"></exclude>
+        <exclude body1="robot:j2_link" body2="robot:j3_link"></exclude>
+        <exclude body1="robot:j3_link" body2="robot:j4_link"></exclude>
+        <exclude body1="robot:j4_link" body2="robot:j5_link"></exclude>
+        <exclude body1="robot:j5_link" body2="robot:j6_link"></exclude>
     </contact>
 </mujoco>
