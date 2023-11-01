@@ -1,0 +1,6 @@
+mujoco==2.3.7
+gymnasium==0.29.1
+matplotlib
+numpy
+torch
+torchvision
