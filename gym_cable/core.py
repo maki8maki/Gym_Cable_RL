@@ -9,8 +9,7 @@ class GoalEnv(gym.Env):
     r"""A goal-based environment.
 
     It functions just as any regular Gymnasium environment but it imposes a required structure on the observation_space. More concretely,
-    the observation space is required to contain at least three elements, namely `observation`, `desired_goal`, and `achieved_goal`.
-    Here, `desired_goal` specifies the goal that the agent should attempt to achieve. `achieved_goal` is the goal that it currently achieved instead.
+    the observation space is required to contain at least three elements, namely `observation`, `rgb_image`, and `depth_image`.
     `observation` contains the actual observations of the environment as per usual.
 
     - :meth:`compute_reward` - Externalizes the reward function by taking the achieved and desired goal, as well as extra information. Returns reward.
@@ -26,7 +25,7 @@ class GoalEnv(gym.Env):
     ):
         """Reset the environment.
 
-        In addition, check if the observation space is correct by inspecting the `observation`, `achieved_goal`, and `desired_goal` keys.
+        In addition, check if the observation space is correct by inspecting the `observation`, `rgb_image`, and `depth_image` keys.
         """
         super().reset(seed=seed)
         # Enforce that each GoalEnv uses a Goal-compatible observation space.
@@ -34,7 +33,7 @@ class GoalEnv(gym.Env):
             raise error.Error(
                 "GoalEnv requires an observation space of type gym.spaces.Dict"
             )
-        for key in ["observation", "achieved_goal", "desired_goal"]:
+        for key in ["observation", "rgb_image", "depth_image"]:
             if key not in self.observation_space.spaces:
                 raise error.Error(
                     'GoalEnv requires the "{}" key to be part of the observation dictionary.'.format(

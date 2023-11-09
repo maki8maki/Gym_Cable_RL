@@ -4,6 +4,7 @@ from typing import Optional, Union
 
 import numpy as np
 from gymnasium import error, logger, spaces
+from gymnasium.envs.mujoco.mujoco_rendering import MujocoRenderer
 
 from gym_cable.core import GoalEnv
 
@@ -36,6 +37,8 @@ class BaseRobotEnv(GoalEnv):
         n_actions: int,
         n_substeps: int,
         render_mode: Optional[str] = None,
+        depth_min: float = 0.07,
+        depth_max: float = 0.5,
         width: int = DEFAULT_SIZE,
         height: int = DEFAULT_SIZE,
     ):
@@ -62,6 +65,8 @@ class BaseRobotEnv(GoalEnv):
         self.n_substeps = n_substeps
 
         self.initial_qpos = initial_qpos
+        
+        self.depth_range = np.array([depth_min, depth_max])
 
         self.width = width
         self.height = height
@@ -77,15 +82,9 @@ class BaseRobotEnv(GoalEnv):
         self.action_space = spaces.Box(-1.0, 1.0, shape=(n_actions,), dtype="float32")
         self.observation_space = spaces.Dict(
             dict(
-                desired_goal=spaces.Box(
-                    -np.inf, np.inf, shape=obs["achieved_goal"].shape, dtype="float64"
-                ),
-                achieved_goal=spaces.Box(
-                    -np.inf, np.inf, shape=obs["achieved_goal"].shape, dtype="float64"
-                ),
-                observation=spaces.Box(
-                    -np.inf, np.inf, shape=obs["observation"].shape, dtype="float64"
-                ),
+                observation=spaces.Box(-np.inf, np.inf, shape=obs["observation"].shape, dtype="float64"),
+                rgb_image=spaces.Box(0, 255, shape=obs["rgb_image"].shape, dtype="int"),
+                depth_image=spaces.Box(0, self.depth_range[1], shape=obs["depth_image"].shape, dtype="float64")
             )
         )
 
@@ -266,14 +265,10 @@ class MujocoRobotEnv(BaseRobotEnv):
 
         self._mujoco = mujoco
         self._utils = mujoco_utils
+        
+        self.default_camera_config = default_camera_config
 
         super().__init__(**kwargs)
-
-        from gymnasium.envs.mujoco.mujoco_rendering import MujocoRenderer
-
-        self.mujoco_renderer = MujocoRenderer(
-            self.model, self.data, default_camera_config
-        )
 
     def _initialize_simulation(self):
         self.model = self._mujoco.MjModel.from_xml_path(self.fullpath)
@@ -287,6 +282,8 @@ class MujocoRobotEnv(BaseRobotEnv):
         self.initial_time = self.data.time
         self.initial_qpos = np.copy(self.data.qpos)
         self.initial_qvel = np.copy(self.data.qvel)
+        
+        self.mujoco_renderer = MujocoRenderer(self.model, self.data, self.default_camera_config)
 
     def _reset_sim(self):
         self.data.time = self.initial_time

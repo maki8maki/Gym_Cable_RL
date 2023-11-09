@@ -62,7 +62,7 @@
 	</worldbody>
 
 	<actuator>
-		<adhesion name="adhesion" body="mz04:ee_adhesion" ctrlrange="0 1" gain="5"></adhesion>
+		<adhesion name="adhesion" body="robot:ee_adhesion" ctrlrange="0 1" gain="5"></adhesion>
 	</actuator>
 </mujoco>
 
