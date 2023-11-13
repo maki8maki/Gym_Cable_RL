@@ -1,9 +1,8 @@
-import copy
 import os
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
-from gymnasium import error, logger, spaces
+from gymnasium import error, spaces
 from gymnasium.envs.mujoco.mujoco_rendering import MujocoRenderer
 
 from gym_cable.core import GoalEnv
@@ -82,8 +81,8 @@ class BaseRobotEnv(GoalEnv):
         self.action_space = spaces.Box(-1.0, 1.0, shape=(n_actions,), dtype="float32")
         self.observation_space = spaces.Dict(
             dict(
-                observation=spaces.Box(-np.inf, np.inf, shape=obs["observation"].shape, dtype="float64"),
-                rgb_image=spaces.Box(0, 255, shape=obs["rgb_image"].shape, dtype="int"),
+                observation=spaces.Box(-np.inf, np.inf, shape=obs["observation"].shape, dtype="float32"),
+                rgb_image=spaces.Box(0, 255, shape=obs["rgb_image"].shape, dtype="uint8"),
                 depth_image=spaces.Box(0, self.depth_range[1], shape=obs["depth_image"].shape, dtype="float64")
             )
         )
