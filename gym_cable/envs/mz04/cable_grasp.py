@@ -11,11 +11,11 @@ class MujocoMZ04CableGraspEnv(MujocoMZ04Env, EzPickle):
     def __init__(self, **kwargs):
         initial_qpos = {
             "robot:j1_joint": 0.0,
-            "robot:j2_joint": 1.85,
-            "robot:j3_joint": -0.723,
-            "robot:j4_joint": 0.0,
-            "robot:j5_joint": 0.377,
-            "robot:j6_joint": 0.0,
+            # "robot:j2_joint": 1.85,
+            # "robot:j3_joint": -0.723,
+            # "robot:j4_joint": 0.0,
+            # "robot:j5_joint": 0.377,
+            # "robot:j6_joint": 0.0,
         }
         MujocoMZ04Env.__init__(
             self,
