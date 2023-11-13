@@ -135,6 +135,16 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         # RGB and Depth images
         rgb_image =  self.mujoco_renderer.render(render_mode="rgb_array", camera_name="robot:camera")
         depth_image = self.mujoco_renderer.render(render_mode="depth_array", camera_name="robot:camera")
+
+        # Get the distances to the near and far clipping planes.
+        extent = self.model.stat.extent
+        near = self.model.vis.map.znear * extent
+        far = self.model.vis.map.zfar * extent
+
+        # Convert from [0 1] to depth in units of length, see links below:
+        # http://stackoverflow.com/a/6657284/1461210
+        # https://www.khronos.org/opengl/wiki/Depth_Buffer_Precision
+        depth_image = near / (1 - depth_image * (1 - near / far))
         
         # Set pixel values outside the range to 0
         depth_image[(depth_image < self.depth_range[0]) | (depth_image > self.depth_range[1])] = 0
