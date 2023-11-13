@@ -21,6 +21,8 @@ class MujocoMZ04CableGraspEnv(MujocoMZ04Env, EzPickle):
             target_range=0.15,
             distance_threshold=0.05,
             initial_qpos=initial_qpos,
+            width=1280,
+            height=720,
             **kwargs,
         )
         EzPickle.__init__(self, **kwargs)

@@ -38,7 +38,7 @@
                                 <body name="robot:end_effector_link" pos="-0.52 0 0.25" euler="0 0 0">
                                     <body name="robot:camera" pos="0.03 0 0.09">
                                         <inertial diaginertia="0.0 0.0 0.0" mass="0" pos="0 0 0"></inertial>
-                                        <camera name="robot:camera" pos="0.01 0 0" euler="0 0 -1.57079633"></camera>
+                                        <camera name="robot:camera" pos="0.01 0 0" euler="0 0 -1.57079633" fovy="58"></camera>
                                         <geom type="box" name="robot:camera" size="0.021 0.021 0.0115" pos="0 0 -0.0115" rgba="1 0 0 1"></geom>
                                     </body>
                                     <body name="robot:end_effector" pos="0 0 -0.02">
