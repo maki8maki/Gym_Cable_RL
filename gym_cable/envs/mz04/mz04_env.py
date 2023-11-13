@@ -6,7 +6,7 @@ from gym_cable.utils import rotations
 DEFAULT_CAMERA_CONFIG = {
     "distance": 1.0,
     "azimuth": 132.0,
-    "elevation": -30.0,
+    "elevation": -20.0,
     "lookat": np.array([0.35, 0.0, 0.3]),
 }
 
