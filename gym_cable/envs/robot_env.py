@@ -129,13 +129,13 @@ class BaseRobotEnv(GoalEnv):
         obs = self._get_obs()
 
         info = {
-            "is_success": self._is_success(obs["achieved_goal"], self.goal),
+            "is_success": self._is_success(obs["observation"], self.goal),
         }
 
-        terminated = self.compute_terminated(obs["achieved_goal"], self.goal, info)
-        truncated = self.compute_truncated(obs["achieved_goal"], self.goal, info)
+        terminated = self.compute_terminated(obs["observation"], self.goal, info)
+        truncated = self.compute_truncated(obs["observation"], self.goal, info)
 
-        reward = self.compute_reward(obs["achieved_goal"], self.goal, info)
+        reward = self.compute_reward(obs["observation"], self.goal, info)
 
         return obs, reward, terminated, truncated, info
 
