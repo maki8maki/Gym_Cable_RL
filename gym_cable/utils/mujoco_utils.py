@@ -66,7 +66,7 @@ def mocap_set_action(model, data, action):
         pos_delta = action[:, :3]
         quat_delta = action[:, 3:]
 
-        reset_mocap2body_xpos(model, data)
+        # reset_mocap2body_xpos(model, data)
         data.mocap_pos[:] = data.mocap_pos + pos_delta
         data.mocap_quat[:] = data.mocap_quat + quat_delta
 

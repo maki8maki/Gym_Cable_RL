@@ -55,7 +55,8 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
 
         def compute_reward(self, achieved_goal, goal, info):
             # Compute distance between goal and the achieved goal.
-            return goal_distance(achieved_goal, goal)
+            # return goal_distance(achieved_goal, goal)
+            return 0
 
         # RobotEnv methods
         # ----------------------------
@@ -63,10 +64,10 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
         def _set_action(self, action):
             assert action.shape == (6,)
             action = action.copy() # ensure that we don't change the action outside of this scope
-            pos_ctrl, rot_ctrl = action[:3], action[3]
+            pos_ctrl, rot_ctrl = action[:3], action[3:]
             
             pos_ctrl *= 0.05 # limit maximum change in position
-            rot_ctrl *= np.pi * 10.0 / 180.0 # limit maximum change in rotation
+            rot_ctrl *= 10 * np.pi / 180.0 # limit maximum change in rotation
 
             quat_ctrl = rotations.euler2quat(rot_ctrl)
             action = np.concatenate([pos_ctrl, quat_ctrl])
@@ -109,8 +110,9 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             return goal.copy()
 
         def _is_success(self, achieved_goal, desired_goal):
-            d = goal_distance(achieved_goal, desired_goal)
-            return (d < self.distance_threshold).astype(np.float32)
+            # d = goal_distance(achieved_goal, desired_goal)
+            # return (d < self.distance_threshold).astype(np.float32)
+            return False
 
     return BaseMZ04Env
 
@@ -183,8 +185,12 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         # # Move end effector into position.
         # gripper_target = np.array([-0.498, 0.005, -0.431 + self.gripper_extra_height]) + self._utils.get_site_xpos(self.model, self.data, "robot0:grip")
         # gripper_rotation = np.array([1.0, 0.0, 1.0, 0.0])
-        # self._utils.set_mocap_pos(self.model, self.data, "robot0:mocap", gripper_target)
-        # self._utils.set_mocap_quat(self.model, self.data, "robot0:mocap", gripper_rotation)
+        # mocap_target = np.array([0.28786238, 0.0, 0.42774052])
+        # mocap_rotation = np.array([0.99944233, 0.0, 0.03339196, 0.0])
+        # mocap_target = np.array([0.28786238, 0.0, 0.42774052])
+        # mocap_rotation = np.array([1.0, 0.0, 0.0, 0.0])
+        # self._utils.set_mocap_pos(self.model, self.data, "robot:mocap", mocap_target)
+        # self._utils.set_mocap_quat(self.model, self.data, "robot:mocap", mocap_rotation)
         # for _ in range(10):
         #     self._mujoco.mj_step(self.model, self.data, nstep=self.n_substeps)
         # # Extract information for sampling goals.
