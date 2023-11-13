@@ -4,10 +4,10 @@ from gym_cable.envs.robot_env import MujocoRobotEnv
 from gym_cable.utils import rotations
 
 DEFAULT_CAMERA_CONFIG = {
-    "distance": 2.5,
+    "distance": 1.0,
     "azimuth": 132.0,
-    "elevation": -14.0,
-    "lookat": np.array([1.3, 0.75, 0.55]),
+    "elevation": -30.0,
+    "lookat": np.array([0.35, 0.0, 0.3]),
 }
 
 
