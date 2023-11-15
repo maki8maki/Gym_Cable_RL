@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mujoco>
 	<compiler angle="radian" meshdir="./stl" autolimits="true"></compiler>
-	<option timestep="0.002">
+	<option timestep="0.002" gravity="0 0 0">
 		<flag warmstart="enable"></flag>
 	</option>
 	<extension>
