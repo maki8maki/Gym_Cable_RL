@@ -117,8 +117,11 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
     return BaseMZ04Env
 
 class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
-    def __init__(self, default_camera_config: dict = DEFAULT_CAMERA_CONFIG, **kwargs):
+    def __init__(self, site_name, joint_names, default_camera_config: dict = DEFAULT_CAMERA_CONFIG, **kwargs):
         super().__init__(default_camera_config=default_camera_config, **kwargs)
+        
+        self.site_name = site_name
+        self.joint_names = joint_names
 
     def _step_callback(self):
         self._mujoco.mj_forward(self.model, self.data)
@@ -127,7 +130,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         action = super()._set_action(action)
 
         # Apply action to simulation.
-        self._utils.mocap_set_action(self.model, self.data, action)
+        self._utils.ik_set_action(self.model, self.data, action, self.site_name, self.joint_names)
 
     def generate_mujoco_observations(self):
         # positions and rotation(eular)
@@ -179,20 +182,8 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
     def _env_setup(self, initial_qpos):
         for name, value in initial_qpos.items():
             self._utils.set_joint_qpos(self.model, self.data, name, value)
-        self._utils.reset_mocap_welds(self.model, self.data)
         self._mujoco.mj_forward(self.model, self.data)
 
-        # # Move end effector into position.
-        # gripper_target = np.array([-0.498, 0.005, -0.431 + self.gripper_extra_height]) + self._utils.get_site_xpos(self.model, self.data, "robot0:grip")
-        # gripper_rotation = np.array([1.0, 0.0, 1.0, 0.0])
-        # mocap_target = np.array([0.28786238, 0.0, 0.42774052])
-        # mocap_rotation = np.array([0.99944233, 0.0, 0.03339196, 0.0])
-        # mocap_target = np.array([0.28786238, 0.0, 0.42774052])
-        # mocap_rotation = np.array([1.0, 0.0, 0.0, 0.0])
-        # self._utils.set_mocap_pos(self.model, self.data, "robot:mocap", mocap_target)
-        # self._utils.set_mocap_quat(self.model, self.data, "robot:mocap", mocap_rotation)
-        # for _ in range(10):
-        #     self._mujoco.mj_step(self.model, self.data, nstep=self.n_substeps)
         # # Extract information for sampling goals.
         # self.initial_gripper_xpos = self._utils.get_site_xpos(self.model, self.data, "robot0:grip").copy()
         # if self.has_object:

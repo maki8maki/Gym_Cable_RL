@@ -317,4 +317,5 @@ class MujocoRobotEnv(BaseRobotEnv):
         return self.model.opt.timestep * self.n_substeps
 
     def _mujoco_step(self, action):
-        self._mujoco.mj_step(self.model, self.data, nstep=self.n_substeps)
+        # self._mujoco.mj_step(self.model, self.data, nstep=self.n_substeps)
+        return
