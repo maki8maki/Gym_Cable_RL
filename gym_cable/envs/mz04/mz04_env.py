@@ -154,7 +154,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         # Set pixel values outside the range to 0
         depth_image[(depth_image < self.depth_range[0]) | (depth_image > self.depth_range[1])] = 0
 
-        return (ee_pos, ee_rot, rgb_image, depth_image)
+        return (ee_pos, ee_rot, rgb_image, np.expand_dims(depth_image, 2))
 
     def _render_callback(self):
         self._mujoco.mj_forward(self.model, self.data)
