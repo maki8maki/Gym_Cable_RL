@@ -41,3 +41,7 @@ class MujocoMZ04CableGraspEnv(MujocoMZ04Env, EzPickle):
             **kwargs,
         )
         EzPickle.__init__(self, **kwargs)
+        
+        # 観測範囲を限定
+        self.observation_space["observation"].low = np.array([0.0, -1.0, 0.0, -np.pi, -np.pi, -np.pi])
+        self.observation_space["observation"].high = np.array([2.0, 1.0, 2.0, np.pi, np.pi, np.pi])
