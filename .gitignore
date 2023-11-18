@@ -7,3 +7,6 @@
 
 # for mujoco error file
 MUJOCO_LOG.TXT
+
+# for RL params
+params.json

@@ -38,9 +38,9 @@ class DCAE(nn.Module):
             # nn.BatchNorm1d(num_features=features[2]),
             nn.ReLU(),
             nn.Linear(in_features=features[2], out_features=features[3]),
-            # nn.BatchNorm1d(num_features=features[3])
+            # nn.BatchNorm1d(num_features=features[3]),
+            nn.ReLU()
         )
-        self.relu = nn.ReLU()
         self.decoder = nn.Sequential(
             nn.Linear(in_features=features[3], out_features=features[2]),
             # nn.BatchNorm1d(num_features=features[2]),
@@ -71,6 +71,5 @@ class DCAE(nn.Module):
         if not return_pred:
             return h
         else:
-            _h = self.relu(h)
-            x_pred = self.decoder(_h)
+            x_pred = self.decoder(h)
             return h, x_pred
