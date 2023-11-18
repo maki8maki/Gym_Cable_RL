@@ -1,18 +1,19 @@
 import numpy as np
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as NF
 import torch.optim as optim
+import torchvision.transforms.functional as TF
 from gymnasium import spaces
 from agents.DCAE import DCAE
 from agents.DDPG import DDPG
 
 class DCAE_DDPG:
-    def __init__(self, image_size, hidden_dim, observation_space, action_space, gamma=0.99, lr=1e-3, batch_size=32, memory_size=50000, device="cpu", dcae_loss = F.mse_loss) -> None:
+    def __init__(self, image_size, hidden_dim, observation_space, action_space, gamma=0.99, lr=1e-3, batch_size=32, memory_size=50000, device="cpu", dcae_loss = NF.mse_loss) -> None:
         self.dcae = DCAE(image_size=image_size, hidden_dim=hidden_dim).to(device)
         self.dcae_optim = optim.Adam(self.dcae.parameters(), lr=lr)
         self.dcae_loss = dcae_loss
-        hidden_low = np.zeros(hidden_dim)
-        hidden_high = np.ones(hidden_dim)
+        hidden_low = np.full(hidden_dim, -1.0)
+        hidden_high = np.full(hidden_dim, 1.0)
         obs_space_low = np.concatenate([hidden_low, observation_space.low])
         obs_space_high = np.concatenate([hidden_high, observation_space.high])
         obs_space = spaces.Box(low=obs_space_low, high=obs_space_high, dtype=np.float64)
@@ -20,29 +21,28 @@ class DCAE_DDPG:
         self.device = device
     
     def get_action(self, state):
-        state_list = list(state.values())
-        h = self.dcae.forward(torch.tensor(state_list[0], dtype=torch.float).to(self.device)).squeeze().cpu().detach().numpy()
-        _state = np.concatenate([h, state_list[1]])
-        return self.ddpg.get_action(_state)
+        image_tensor = TF.to_tensor(state['image']).to(self.device)
+        h = self.dcae.forward(image_tensor).squeeze().detach() * 2.0 - 1.0
+        obs_tensor = torch.tensor(state['observation'], dtype=torch.float, device=self.device)
+        _state = torch.cat((h, obs_tensor))
+        return self.ddpg.get_action(_state).cpu().detach().numpy()
     
     def batch_to_hidden_state(self, batch):
         imgs, rbs, next_imgs, next_rbs = [], [], [], []
-        for i in range(len(batch["states"])):
-            state_list = list(batch["states"][i].values())
-            next_state_list = list(batch["next_states"][i].values())
-            imgs.append(state_list[0])
-            rbs.append(state_list[1])
-            next_imgs.append(next_state_list[0])
-            next_rbs.append(next_state_list[1])
-        imgs = torch.tensor(np.array(imgs), dtype=torch.float).to(self.device)
-        rbs = np.array(rbs)
-        next_imgs = torch.tensor(np.array(next_imgs), dtype=torch.float).to(self.device)
-        next_rbs = np.array(next_rbs)
+        for state, next_state in zip(batch['states'], batch['next_states']):
+            imgs.append(state['image'])
+            rbs.append(state['observation'])
+            next_imgs.append(next_state['image'])
+            next_rbs.append(next_state['observation'])
+        imgs = torch.tensor(np.array(imgs), dtype=torch.float, device=self.device).permute(0, 3, 1, 2)
+        rbs = torch.tensor(np.array(rbs), dtype=torch.float, device=self.device)
+        next_imgs = torch.tensor(np.array(next_imgs), dtype=torch.float, device=self.device).permute(0, 3, 1, 2)
+        next_rbs = torch.tensor(np.array(next_rbs), dtype=torch.float, device=self.device)
         hs, imgs_pred = self.dcae.forward(imgs, return_pred=True)
-        hs = hs.cpu().detach().numpy()
+        hs = hs.detach()
         loss = self.dcae_loss(imgs_pred, imgs)
-        next_hs = self.dcae.forward(next_imgs).cpu().detach().numpy()
-        return loss, np.concatenate([hs, rbs], axis=1), np.concatenate([next_hs, next_rbs], axis=1)
+        next_hs = self.dcae.forward(next_imgs).detach()
+        return loss, torch.cat((hs, rbs), axis=1), torch.cat((next_hs, next_rbs), axis=1)
 
     def update(self):
         batch = self.ddpg.replay_buffer.sample(self.ddpg.batch_size)

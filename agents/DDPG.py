@@ -40,8 +40,6 @@ class DDPG:
     def __init__(self, observation_space, action_space, gamma=0.99, lr=1e-3, batch_size=32, memory_size=50000, device="cpu"):
         self.num_state = observation_space.shape[0]
         self.num_action = action_space.shape[0]
-        # self.state_mean = 0.5*(observation_space.high + observation_space.low)
-        # self.state_halfwidth = 0.5*(observation_space.high - observation_space.low)
         self.gamma = gamma  # 割引率
         self.batch_size = batch_size
         self.actor = ActorNetwork(self.num_state, action_space, device=device).to(device)
@@ -57,20 +55,21 @@ class DDPG:
         self.replay_buffer = ReplayBuffer(memory_size)
         self.device = device
 
-    # 連続値の状態を[-1,1]の範囲に正規化
-    def normalize_state(self, state):
-        state = (state-self.state_mean)/self.state_halfwidth
-        return state
-
     # リプレイバッファからサンプルされたミニバッチをtensorに変換
     def batch_to_tensor(self, batch):
-        # states = torch.tensor([self.normalize_state(s) for s in batch["states"]], dtype=torch.float)
-        states = torch.tensor(batch["states"], dtype=torch.float, device=self.device)
-        actions = torch.tensor(batch["actions"], dtype=torch.float, device=self.device)
-        # next_states = torch.tensor([self.normalize_state(s) for s in batch["next_states"]], dtype=torch.float)
-        next_states = torch.tensor(batch["next_states"], dtype=torch.float, device=self.device)
-        rewards = torch.tensor(batch["rewards"], dtype=torch.float, device=self.device)
-        return states, actions, next_states, rewards
+        key_list = ['states', 'actions', 'next_states', 'rewards']
+        return_list = []
+        for key in key_list:
+            if isinstance(batch[key], torch.Tensor):
+                item = batch[key]
+                if item.dtype != torch.float:
+                    item = item.to(torch.float)
+                if item.device != self.device:
+                    item = item.to(self.device)
+            else:
+                item = torch.tensor(batch[key], dtype=torch.float, device=self.device)
+            return_list.append(item)
+        return return_list
 
     # actorとcriticを更新
     def update(self):
@@ -112,7 +111,13 @@ class DDPG:
 
     # Q値が最大の行動を選択
     def get_action(self, state):
-        # state_tensor = torch.tensor(self.normalize_state(state), dtype=torch.float).view(-1, self.num_state)
-        state_tensor = torch.tensor(state, dtype=torch.float, device=self.device).view(-1, self.num_state)
-        action = self.actor(state_tensor).view(self.num_action)
+        if isinstance(state, torch.Tensor):
+            state_tensor = state
+            if state_tensor.dtype != torch.float:
+                state_tensor = state_tensor.to(torch.float)
+            if state_tensor.device != self.device:
+                state_tensor = state_tensor.to(self.device)
+        else:
+            state_tensor = torch.tensor(state, dtype=torch.float, device=self.device)
+        action = self.actor(state_tensor.view(-1, self.num_state)).view(self.num_action)
         return action

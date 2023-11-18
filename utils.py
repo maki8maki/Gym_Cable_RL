@@ -24,3 +24,25 @@ def anim(frames):
 
     anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=50)
     plt.show()
+
+def normalize_state(state, observation_space):
+    # 連続値の状態を[-1,1]の範囲に正規化
+    if isinstance(state, dict):
+        normalized_state = {}
+        for key in state.keys():
+            state_mean = 0.5 * (observation_space[key].high + observation_space[key].low)
+            state_halfwidth = 0.5 * (observation_space[key].high - observation_space[key].low)
+            normalized_state[key] = ((state[key].astype(np.float32) - state_mean) / state_halfwidth).astype(np.float32)
+    else:
+        state_mean = 0.5 * (observation_space[key].high + observation_space[key].low)
+        state_halfwidth = 0.5 * (observation_space[key].high - observation_space[key].low)
+        normalized_state = ((state.astype(np.float32) - state_mean) / state_halfwidth).astype(np.float32)
+    return normalized_state
+
+def obs2state(obs, observation_space, trans, image_list=['rgb_image', 'depth_image']):
+    normalized_obs = normalize_state(obs, observation_space)
+    image = normalized_obs[image_list[0]]
+    for name in image_list[1:]:
+        image = np.concatenate([image, normalized_obs[name]], axis=2)
+    state = {'observation': normalized_obs['observation'], 'image': trans(image)}
+    return state

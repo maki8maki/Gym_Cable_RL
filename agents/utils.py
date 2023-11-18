@@ -14,7 +14,7 @@ class Reshape(nn.Module):
         self.shape = shape
 
     def forward(self,x):
-        return x.view(self.shape)
+        return x.reshape(self.shape)
 
 class ReplayBuffer:
     def __init__(self, memory_size) -> None:
