@@ -232,13 +232,16 @@ def quat2euler(quat):
     return mat2euler(quat2mat(quat))
 
 
-def subtract_euler(e1, e2):
-
+def subtract_eular2quat(e1, e2):
     assert e1.shape == e2.shape
     assert e1.shape[-1] == 3
     q1 = euler2quat(e1)
     q2 = euler2quat(e2)
-    q_diff = quat_mul(q1, quat_conjugate(q2))
+    return(quat_mul(q1, quat_conjugate(q2)))
+
+
+def subtract_euler(e1, e2):
+    q_diff = subtract_eular2quat(e1, e2)
     return quat2euler(q_diff)
 
 
