@@ -11,10 +11,6 @@ DEFAULT_CAMERA_CONFIG = {
 }
 
 
-def goal_distance(goal_a, goal_b):
-    assert goal_a.shape == goal_b.shape
-    return np.linalg.norm(goal_a - goal_b, axis=-1)
-
 def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
     """Factory function that returns a BaseMZ04Env class that inherits
     from MujocoRobotEnv.
@@ -29,6 +25,8 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             obj_range,
             target_range,
             distance_threshold,
+            eular_threshold,
+            rot_weight,
             **kwargs
         ):
             """Initializes a new MZ04 environment.
@@ -47,16 +45,22 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             self.obj_range = obj_range
             self.target_range = target_range
             self.distance_threshold = distance_threshold
+            self.eular_threshold = eular_threshold
+            self.rot_weight = rot_weight
 
             super().__init__(n_actions=6, **kwargs)
 
         # GoalEnv methods
         # ----------------------------
 
-        def compute_reward(self, achieved_goal, goal, info):
-            # Compute distance between goal and the achieved goal.
-            # return goal_distance(achieved_goal, goal)
-            return 0
+        def compute_reward(self, obs, goal, info):
+            err_norm = 0.0
+            err_norm += self._utils.goal_distance(obs[:3], goal[:3])
+            err_rot_quat = rotations.subtract_eular2quat(obs[3:], goal[3:])
+            err_rot = np.empty(3, dtype=err_rot_quat.dtype)
+            self._mujoco.mju_quat2Vel(err_rot, err_rot_quat, 1)
+            err_norm += np.linalg.norm(err_rot) * self.rot_weight
+            return -err_norm
 
         # RobotEnv methods
         # ----------------------------
@@ -67,7 +71,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             pos_ctrl, rot_ctrl = action[:3], action[3:]
             
             pos_ctrl *= 0.05 # limit maximum change in position
-            rot_ctrl *= 10 * np.pi / 180.0 # limit maximum change in rotation
+            rot_ctrl *= np.deg2rad(10) # limit maximum change in rotation
 
             quat_ctrl = rotations.euler2quat(rot_ctrl)
             action = np.concatenate([pos_ctrl, quat_ctrl])
@@ -94,25 +98,16 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             raise NotImplementedError
 
         def _sample_goal(self):
-            goal = np.random.uniform(0, 1, (3,))
-            # if self.has_object:
-            #     goal = self.initial_gripper_xpos[:3] + self.np_random.uniform(
-            #         -self.target_range, self.target_range, size=3
-            #     )
-            #     goal += self.target_offset
-            #     goal[2] = self.height_offset
-            #     if self.target_in_the_air and self.np_random.uniform() < 0.5:
-            #         goal[2] += self.np_random.uniform(0, 0.45)
-            # else:
-            #     goal = self.initial_gripper_xpos[:3] + self.np_random.uniform(
-            #         -self.target_range, self.target_range, size=3
-            #     )
-            return goal.copy()
+            cable_end_pos = self.data.body('B_last').xpos
+            cable_end_mat = self.data.body('B_last').xmat.reshape(3, 3)
+            goal_pos = cable_end_pos + cable_end_mat.T @ self.target_offset
+            goal_rot = rotations.quat2euler(self.data.body('B_last').xquat)
+            return np.concatenate([goal_pos, goal_rot])
 
-        def _is_success(self, achieved_goal, desired_goal):
-            # d = goal_distance(achieved_goal, desired_goal)
-            # return (d < self.distance_threshold).astype(np.float32)
-            return False
+        def _is_success(self, obs, goal):
+            dis = self._utils.goal_distance(obs[:3], goal[:3])
+            eular_diff = rotations.subtract_euler(obs[3:], goal[3:])
+            return (dis < self.distance_threshold) and (eular_diff < self.eular_threshold).all()
 
     return BaseMZ04Env
 
@@ -166,16 +161,6 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         if self.model.na != 0:
             self.data.act[:] = None
 
-        # # Randomize start position of object.
-        # if self.has_object:
-        #     object_xpos = self.initial_gripper_xpos[:2]
-        #     while np.linalg.norm(object_xpos - self.initial_gripper_xpos[:2]) < 0.1:
-        #         object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(-self.obj_range, self.obj_range, size=2)
-        #     object_qpos = self._utils.get_joint_qpos(self.model, self.data, "object0:joint")
-        #     assert object_qpos.shape == (7,)
-        #     object_qpos[:2] = object_xpos
-        #     self._utils.set_joint_qpos(self.model, self.data, "object0:joint", object_qpos)
-
         self._mujoco.mj_forward(self.model, self.data)
         return True
 
@@ -183,8 +168,3 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         for name, value in initial_qpos.items():
             self._utils.set_joint_qpos(self.model, self.data, name, value)
         self._mujoco.mj_forward(self.model, self.data)
-
-        # # Extract information for sampling goals.
-        # self.initial_gripper_xpos = self._utils.get_site_xpos(self.model, self.data, "robot0:grip").copy()
-        # if self.has_object:
-        #     self.height_offset = self._utils.get_site_xpos(self.model, self.data, "object0")[2]

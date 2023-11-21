@@ -31,6 +31,10 @@ IKResult = collections.namedtuple('IKResult', ['qpos', 'err_norm', 'steps', 'suc
 
 DOWN_QUATERNION = np.array([0., 0.70710678118, 0.70710678118, 0.])
 
+def goal_distance(goal_a, goal_b):
+    assert goal_a.shape == goal_b.shape
+    return np.linalg.norm(goal_a - goal_b, axis=-1)
+
 def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=None, joint_names=None,
                         tol=1e-14, rot_weight=1.0, regularization_threshold=0.1, regularization_strength=3e-2,
                         max_update_norm=2.0, progress_thresh=20.0, max_steps=100, inplace=False):

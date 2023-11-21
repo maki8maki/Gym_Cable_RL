@@ -91,13 +91,12 @@ class BaseRobotEnv(GoalEnv):
 
     # Env methods
     # ----------------------------
-    def compute_terminated(self, achieved_goal, desired_goal, info):
-        """All the available environments are currently continuing tasks and non-time dependent. The objective is to reach the goal for an indefinite period of time."""
-        return False
+    def compute_terminated(self, obs, goal, info):
+        return info['is_success']
 
-    def compute_truncated(self, achievec_goal, desired_goal, info):
-        """The environments will be truncated only if setting a time limit with max_steps which will automatically wrap the environment in a gymnasium TimeLimit wrapper."""
-        return False
+    def compute_truncated(self, obs, goal, info):
+        is_far = (self._utils.goal_distance(obs[:3], goal[:3]) > 1.0)
+        return info['contacted'] or is_far
 
     def step(self, action):
         """Run one timestep of the environment's dynamics using the agent actions.
@@ -111,8 +110,7 @@ class BaseRobotEnv(GoalEnv):
             terminated (boolean): Whether the agent reaches the terminal state. This is calculated by :meth:`compute_terminated` of `GoalEnv`.
             truncated (boolean): Whether the truncation condition outside the scope of the MDP is satisfied. Timically, due to a timelimit, but
             it is also calculated in :meth:`compute_truncated` of `GoalEnv`.
-            info (dictionary): Contains auxiliary diagnostic information (helpful for debugging, learning, and logging). In this case there is a single
-            key `is_success` with a boolean value, True if the `achieved_goal` is the same as the `desired_goal`.
+            info (dictionary): Contains auxiliary diagnostic information (helpful for debugging, learning, and logging).
         """
         if np.array(action).shape != self.action_space.shape:
             raise ValueError("Action dimension mismatch")
@@ -130,6 +128,7 @@ class BaseRobotEnv(GoalEnv):
 
         info = {
             "is_success": self._is_success(obs["observation"], self.goal),
+            "contacted": (self.data.ncon != 0),
         }
 
         terminated = self.compute_terminated(obs["observation"], self.goal, info)
@@ -203,7 +202,7 @@ class BaseRobotEnv(GoalEnv):
         """Applies the given action to the simulation."""
         raise NotImplementedError()
 
-    def _is_success(self, achieved_goal, desired_goal):
+    def _is_success(self, obs, goal):
         """Indicates whether or not the achieved goal successfully achieved the desired goal."""
         raise NotImplementedError()
 

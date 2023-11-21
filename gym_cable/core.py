@@ -42,15 +42,15 @@ class GoalEnv(gym.Env):
                 )
 
     @abstractmethod
-    def compute_reward(self, achieved_goal, desired_goal, info):
-        """Compute the step reward. This externalizes the reward function and makes it dependent on a desired goal and the one that was achieved.
+    def compute_reward(self, obs, goal, info):
+        """Compute the step reward. This externalizes the reward function and makes it dependent on a desired goal and the observation.
 
         If you wish to include additional rewards that are independent of the goal, you can include the necessary values
         to derive it in 'info' and compute it accordingly.
 
         Args:
-            achieved_goal (object): the goal that was achieved during execution
-            desired_goal (object): the desired goal that we asked the agent to attempt to achieve
+            obs (object): the observation
+            goal (object): the desired goal that we asked the agent to attempt to achieve
             info (dict): an info dictionary with additional information
 
         Returns:
@@ -58,25 +58,23 @@ class GoalEnv(gym.Env):
             goal. Note that the following should always hold true:
 
                 ob, reward, terminated, truncated, info = env.step()
-                assert reward == env.compute_reward(ob['achieved_goal'], ob['desired_goal'], info)
+                assert reward == env.compute_reward(ob['observation'], env.goal, info)
         """
         raise NotImplementedError
 
     @abstractmethod
-    def compute_terminated(self, achieved_goal, desired_goal, info):
-        """Compute the step termination. Allows to customize the termination states depending on the desired and the achieved goal.
+    def compute_terminated(self, obs, goal, info):
+        """Compute the step termination. Allows to customize the termination states depending on the desired goal and the observation.
 
         If you wish to determine termination states independent of the goal, you can include necessary values to derive it in 'info'
         and compute it accordingly. The envirtonment reaches a termination state when this state leads to an episode ending in an episodic
         task thus breaking .
 
-        More information can be found in: https://farama.org/New-Step-API#theory
-
         Termination states are
 
         Args:
-            achieved_goal (object): the goal that was achieved during execution
-            desired_goal (object): the desired goal that we asked the agent to attempt to achieve
+            obs (object): the goal that was achieved during execution
+            goal (object): the desired goal that we asked the agent to attempt to achieve
             info (dict): an info dictionary with additional information
 
         Returns:
@@ -84,23 +82,21 @@ class GoalEnv(gym.Env):
             goal. Note that the following should always hold true:
 
                 ob, reward, terminated, truncated, info = env.step()
-                assert terminated == env.compute_terminated(ob['achieved_goal'], ob['desired_goal'], info)
+                assert terminated == env.compute_terminated(ob['observation'], env.goal, info)
         """
         raise NotImplementedError
 
     @abstractmethod
-    def compute_truncated(self, achieved_goal, desired_goal, info):
-        """Compute the step truncation. Allows to customize the truncated states depending on the desired and the achieved goal.
+    def compute_truncated(self, obs, goal, info):
+        """Compute the step truncation. Allows to customize the truncated states depending on the desired goal and the observation.
 
         If you wish to determine truncated states independent of the goal, you can include necessary values to derive it in 'info'
         and compute it accordingly. Truncated states are those that are out of the scope of the Markov Decision Process (MDP) such
         as time constraints in a continuing task.
 
-        More information can be found in: https://farama.org/New-Step-API#theory
-
         Args:
-            achieved_goal (object): the goal that was achieved during execution
-            desired_goal (object): the desired goal that we asked the agent to attempt to achieve
+            obs (object): the observation
+            goal (object): the desired goal that we asked the agent to attempt to achieve
             info (dict): an info dictionary with additional information
 
         Returns:
@@ -108,6 +104,6 @@ class GoalEnv(gym.Env):
             goal. Note that the following should always hold true:
 
                 ob, reward, terminated, truncated, info = env.step()
-                assert truncated == env.compute_truncated(ob['achieved_goal'], ob['desired_goal'], info)
+                assert truncated == env.compute_truncated(ob['observation'], env.goal, info)
         """
         raise NotImplementedError
