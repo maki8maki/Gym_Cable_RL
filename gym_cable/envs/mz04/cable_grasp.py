@@ -22,7 +22,7 @@ class MujocoMZ04CableGraspEnv(MujocoMZ04Env, EzPickle):
             self,
             model_path=MODEL_XML_PATH,
             n_substeps=20,
-            target_offset=np.array([0.009, 0.0, 0.002]),
+            target_offset=np.array([-0.009, 0.0, 0.002]),
             obj_range=0.15,
             target_range=0.15,
             distance_threshold=0.05,
