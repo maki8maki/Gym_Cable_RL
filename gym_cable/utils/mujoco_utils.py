@@ -314,7 +314,8 @@ def set_site_to_xpos(model, data, site, joint_names, target_pos, target_quat=Non
 
 def ik_set_action(model, data, action, site_name, joint_names):
     target_pos = get_site_xpos(model, data, site_name) + action[:3]
-    target_quat = rotations.mat2quat(get_site_xmat(model, data, site_name)) + action[3:7]
+    target_mat = rotations.add_rot_mat(get_site_xmat(model, data, site_name), rotations.quat2mat(action[3:7]))
+    target_quat = rotations.mat2quat(target_mat)
     success = set_site_to_xpos(model, data, site_name, joint_names, target_pos, target_quat)
     return success
 

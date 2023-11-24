@@ -112,8 +112,6 @@ _EPS4 = _FLOAT_EPS * 4.0
 
 def euler2mat(euler):
     """Convert Euler Angles to Rotation Matrix.
-
-    See rotation.py for notes
     """
     euler = np.asarray(euler, dtype=np.float64)
     assert euler.shape[-1] == 3, f"Invalid shaped euler {euler}"
@@ -139,8 +137,6 @@ def euler2mat(euler):
 
 def euler2quat(euler):
     """Convert Euler Angles to Quaternions.
-
-    See rotation.py for notes
     """
     euler = np.asarray(euler, dtype=np.float64)
     assert euler.shape[-1] == 3, f"Invalid shape euler {euler}"
@@ -161,8 +157,6 @@ def euler2quat(euler):
 
 def mat2euler(mat):
     """Convert Rotation Matrix to Euler Angles.
-
-    See rotation.py for notes
     """
     mat = np.asarray(mat, dtype=np.float64)
     assert mat.shape[-2:] == (3, 3), f"Invalid shape matrix {mat}"
@@ -186,8 +180,6 @@ def mat2euler(mat):
 
 def mat2quat(mat):
     """Convert Rotation Matrix to Quaternion.
-
-    See rotation.py for notes
     """
     mat = np.asarray(mat, dtype=np.float64)
     assert mat.shape[-2:] == (3, 3), f"Invalid shape matrix {mat}"
@@ -226,8 +218,6 @@ def mat2quat(mat):
 
 def quat2euler(quat):
     """Convert Quaternion to Euler Angles.
-
-    See rotation.py for notes
     """
     return mat2euler(quat2mat(quat))
 
@@ -245,10 +235,14 @@ def subtract_euler(e1, e2):
     return quat2euler(q_diff)
 
 
+def add_rot_mat(mat1, mat2):
+    _mat1 = mat1.reshape(3, 3)
+    _mat2 = mat2.reshape(3, 3)
+    return _mat2 @ _mat1
+
+
 def quat2mat(quat):
     """Convert Quaternion to Euler Angles.
-
-    See rotation.py for notes
     """
     quat = np.asarray(quat, dtype=np.float64)
     assert quat.shape[-1] == 4, f"Invalid shape quat {quat}"
