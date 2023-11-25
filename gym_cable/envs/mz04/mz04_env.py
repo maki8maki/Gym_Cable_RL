@@ -60,7 +60,12 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             err_rot = np.empty(3, dtype=err_rot_quat.dtype)
             self._mujoco.mju_quat2Vel(err_rot, err_rot_quat, 1)
             err_norm += np.linalg.norm(err_rot) * self.rot_weight
-            return -err_norm
+            reward = -err_norm
+            if self.terminated:
+                reward += 100
+            elif self.truncated:
+                reward -= 100
+            return reward
 
         # RobotEnv methods
         # ----------------------------
@@ -125,7 +130,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         action = super()._set_action(action)
 
         # Apply action to simulation.
-        self._utils.ik_set_action(self.model, self.data, action, self.site_name, self.joint_names)
+        self.ik_success = self._utils.ik_set_action(self.model, self.data, action, self.site_name, self.joint_names)
 
     def generate_mujoco_observations(self):
         # positions and rotation(eular)

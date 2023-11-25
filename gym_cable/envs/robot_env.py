@@ -96,7 +96,7 @@ class BaseRobotEnv(GoalEnv):
 
     def compute_truncated(self, obs, goal, info):
         is_far = (self._utils.goal_distance(obs[:3], goal[:3]) > 1.0)
-        return info['contacted'] or is_far
+        return info['contacted'] or (not info['ik_success']) or is_far
 
     def step(self, action):
         """Run one timestep of the environment's dynamics using the agent actions.
@@ -129,14 +129,15 @@ class BaseRobotEnv(GoalEnv):
         info = {
             "is_success": self._is_success(obs["observation"], self.goal),
             "contacted": (self.data.ncon != 0),
+            "ik_success": self.ik_success,
         }
 
-        terminated = self.compute_terminated(obs["observation"], self.goal, info)
-        truncated = self.compute_truncated(obs["observation"], self.goal, info)
+        self.terminated = self.compute_terminated(obs["observation"], self.goal, info)
+        self.truncated = self.compute_truncated(obs["observation"], self.goal, info)
 
         reward = self.compute_reward(obs["observation"], self.goal, info)
 
-        return obs, reward, terminated, truncated, info
+        return obs, reward, self.terminated, self.truncated, info
 
     def reset(
         self,
