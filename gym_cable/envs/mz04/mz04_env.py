@@ -54,17 +54,18 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
         # ----------------------------
 
         def compute_reward(self, obs, goal, info):
-            err_norm = 0.0
-            err_norm += self._utils.goal_distance(obs[:3], goal[:3])
-            err_rot_quat = rotations.subtract_eular2quat(obs[3:], goal[3:])
-            err_rot = np.empty(3, dtype=err_rot_quat.dtype)
-            self._mujoco.mju_quat2Vel(err_rot, err_rot_quat, 1)
-            err_norm += np.linalg.norm(err_rot) * self.rot_weight
-            reward = -err_norm
             if self.terminated:
-                reward += 100
+                reward = 10
             elif self.truncated:
-                reward -= 100
+                reward = -10
+            else:
+                err_norm = 0.0
+                err_norm += self._utils.goal_distance(obs[:3], goal[:3])
+                err_rot_quat = rotations.subtract_eular2quat(obs[3:], goal[3:])
+                err_rot = np.empty(3, dtype=err_rot_quat.dtype)
+                self._mujoco.mju_quat2Vel(err_rot, err_rot_quat, 1)
+                err_norm += np.linalg.norm(err_rot) * self.rot_weight
+                reward = -err_norm
             return reward
 
         # RobotEnv methods
