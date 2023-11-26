@@ -201,7 +201,7 @@ def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=Non
             logging.debug('Step %2i: err_norm=%-10.3g update_norm=%-10.3g', steps, err_norm, update_norm)
 
     if not success and steps == max_steps - 1:
-        logging.warning('Failed to converge after %i steps: err_norm=%3g', steps, err_norm)
+        logging.debug('Failed to converge after %i steps: err_norm=%3g', steps, err_norm)
 
     if not inplace:
         # Our temporary copy of data is about to go out of scope, and when
