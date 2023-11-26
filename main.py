@@ -16,8 +16,8 @@ if __name__ == '__main__':
     seed = 42
     set_seed(seed)
     
-    pwd = os.path.dirname(os.path.abspath(__file__)) + "/"
-    with open(pwd+"params.json", "r") as f:
+    pwd = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(pwd, "params.json"), "r") as f:
         data = json.load(f)
     nepisodes = data["nepisodes"]
     nsteps = data["nsteps"]
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         agent.ddpg.replay_buffer.append(transition)
         frames.append(env.render())
         if terminated or truncated:
-            obs, info = env.reset()
+            obs, _ = env.reset()
         else:
             obs = next_obs
     # anim(frames)
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     for episode in tqdm(range(nepisodes)):
         obs, _ = env.reset()
         episode_reward = 0
-        for t in range(nsteps):
+        for step in range(nsteps):
             state = obs2state(obs, env.observation_space, trans)
             action = agent.get_action(state)
             next_obs, reward, terminated, truncated, _ = env.step(action)
@@ -96,8 +96,8 @@ if __name__ == '__main__':
             else:
                 obs = next_obs
         episode_rewards.append(episode_reward)
-        if (episode+1) % 5 == 0:
-            print("Episode %d finished | Episode reward %f" % (episode+1, episode_reward))
+        if (episode+1) % 10 == 0:
+            tqdm.write("Episode %d finished | Episode reward %f" % (episode+1, episode_reward))
 
     # 累積報酬の移動平均を表示
     moving_average = np.convolve(episode_rewards, np.ones(num_average_epidodes)/num_average_epidodes, mode='valid')
