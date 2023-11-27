@@ -45,7 +45,7 @@ class BaseRobotEnv(GoalEnv):
 
         Args:
             model_path (string): the path to the mjcf MuJoCo model.
-            initial_qpos (np.ndarray): initial position value of the joints in the MuJoCo simulation.
+            initial_qpos (dict): initial position value of the joints in the MuJoCo simulation.
             n_actions (integer): size of the action space.
             n_substeps (integer): number of MuJoCo simulation timesteps per Gymnasium step.
             render_mode (optional string): type of rendering mode, "human" for window rendeirng and "rgb_array" for offscreen. Defaults to None.
@@ -96,7 +96,7 @@ class BaseRobotEnv(GoalEnv):
 
     def compute_truncated(self, obs, goal, info):
         info['ik_success'] = self.ik_success
-        info['contacted'] = (self.data.ncon != 0)
+        info['contacted'] = (self.data.ncon > 5)
         is_far = (self._utils.goal_distance(obs[:3], goal[:3]) > 0.5)
         info['is_far'] = is_far
         return (not info['ik_success']) or info['contacted'] or info['is_far']
