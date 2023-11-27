@@ -25,7 +25,7 @@ class DCAE_DDPG:
         h = self.dcae.forward(image_tensor).squeeze().detach() * 2.0 - 1.0
         obs_tensor = torch.tensor(state['observation'], dtype=torch.float, device=self.device)
         _state = torch.cat((h, obs_tensor))
-        return self.ddpg.get_action(_state).cpu().detach().numpy()
+        return self.ddpg.get_action(_state)
     
     def batch_to_hidden_state(self, batch):
         imgs, rbs, next_imgs, next_rbs = [], [], [], []
