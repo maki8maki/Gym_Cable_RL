@@ -54,18 +54,17 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
         # ----------------------------
 
         def compute_reward(self, obs, goal, info):
+            err_norm = 0.0
+            err_norm += self._utils.goal_distance(obs[:3], goal[:3])
+            err_rot_quat = rotations.subtract_eular2quat(obs[3:], goal[3:])
+            err_rot = np.empty(3, dtype=err_rot_quat.dtype)
+            self._mujoco.mju_quat2Vel(err_rot, err_rot_quat, 1)
+            err_norm += np.linalg.norm(err_rot) * self.rot_weight
+            reward = -err_norm
             if self.terminated:
-                reward = 10
+                reward += 100
             elif self.truncated:
-                reward = -10
-            else:
-                err_norm = 0.0
-                err_norm += self._utils.goal_distance(obs[:3], goal[:3])
-                err_rot_quat = rotations.subtract_eular2quat(obs[3:], goal[3:])
-                err_rot = np.empty(3, dtype=err_rot_quat.dtype)
-                self._mujoco.mju_quat2Vel(err_rot, err_rot_quat, 1)
-                err_norm += np.linalg.norm(err_rot) * self.rot_weight
-                reward = -err_norm
+                reward += -10
             return reward
 
         # RobotEnv methods
@@ -159,16 +158,6 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
 
     def _render_callback(self):
         self._mujoco.mj_forward(self.model, self.data)
-
-    def _reset_sim(self):
-        self.data.time = self.initial_time
-        self.data.qpos[:] = np.copy(self.initial_qpos)
-        self.data.qvel[:] = np.copy(self.initial_qvel)
-        if self.model.na != 0:
-            self.data.act[:] = None
-
-        self._mujoco.mj_forward(self.model, self.data)
-        return True
 
     def _env_setup(self, initial_qpos):
         for name, value in initial_qpos.items():
