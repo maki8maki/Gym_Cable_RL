@@ -1,8 +1,10 @@
 import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 from agents.utils import size_after_conv, size_after_pooling, Reshape
 
 class DCAE(nn.Module):
-    def __init__(self, image_size, hidden_dim) -> None:
+    def __init__(self, image_size, hidden_dim, lr=1e-3, loss_func=F.mse_loss) -> None:
         super().__init__()
         img_height, img_width, img_channel = image_size
         channels = [img_channel, 32, 64, 128, 256]
@@ -65,6 +67,8 @@ class DCAE(nn.Module):
             nn.Sigmoid(),
             nn.Upsample(size=(img_height, img_width))
         )
+        self.optim = optim.Adam(self.parameters(), lr=lr)
+        self.loss_func = loss_func
     
     def forward(self, x, return_pred=False):
         h = self.encoder(x)
@@ -73,3 +77,4 @@ class DCAE(nn.Module):
         else:
             x_pred = self.decoder(h)
             return h, x_pred
+    

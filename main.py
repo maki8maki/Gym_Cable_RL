@@ -9,8 +9,8 @@ from tqdm import tqdm
 import gymnasium as gym
 import gym_cable
 
-from utils import set_seed, anim, obs2state
-from agents.comb import DCAE_DDPG
+from utils import *
+from agents.comb import *
 
 if __name__ == '__main__':
     seed = 42
@@ -29,7 +29,7 @@ if __name__ == '__main__':
         device = "cuda"
     else:
         device = "cpu"
-        logging.warning("You are using cpu!!")
+        logging.warning("You are using CPU!!")
     
     gym_cable.register_robotics_envs()
     env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nepisodes)
@@ -38,40 +38,39 @@ if __name__ == '__main__':
         "hidden_dim": data["hidden_dim"],
         "observation_space": env.observation_space["observation"],
         "action_space": env.action_space,
-        "gamma": data["gamma"],
-        "batch_size": data["batch_size"],
         "memory_size": memory_size,
+        "fe_kwargs": {
+            "lr": data["lr"],
+        },
+        "rl_kwargs": {
+            "gamma": data["gamma"],
+            "batch_size": data["batch_size"],
+            "lr": data["lr"],
+        },
         "device": device
     }
     
-    agent = DCAE_DDPG(**config)
+    agent = DCAE_SAC(config)
     trans = lambda img: cv2.resize(img, (img_width, img_height))
 
     obs, _ = env.reset(seed=seed)
-    frames = [env.render()]
+    # frames = [env.render()]
     for i in tqdm(range(memory_size)):
         action = env.action_space.sample()
         next_obs, reward, terminated, truncated, _ = env.step(action)
         state = obs2state(obs, env.observation_space, trans)
         next_state = obs2state(next_obs, env.observation_space, trans)
-        transition = {
-            'state': state,
-            'next_state': next_state,
-            'reward': reward,
-            'action': action,
-            'success': int(terminated), # エピソードの終了（成功）
-            'done': int(truncated) # エピソードの打ち切り（失敗、エピソードの上限に達する）
-        }
-        agent.ddpg.replay_buffer.append(transition)
-        frames.append(env.render())
+        transition = return_transition(state, next_state, reward, action, terminated, truncated)
+        agent.replay_buffer.append(transition)
+        # frames.append(env.render())
         if terminated or truncated:
-            obs, _ = env.reset()
+            obs, info = env.reset()
         else:
             obs = next_obs
-    # anim(frames)
-    
+
     episode_rewards = []
     num_average_epidodes = 5
+    frames = []
     for episode in tqdm(range(nepisodes)):
         obs, _ = env.reset()
         episode_reward = 0
@@ -80,24 +79,21 @@ if __name__ == '__main__':
             action = agent.get_action(state)
             next_obs, reward, terminated, truncated, _ = env.step(action)
             next_state = obs2state(next_obs, env.observation_space, trans)
-            transition = {
-                'state': state,
-                'next_state': next_state,
-                'reward': reward,
-                'action': action,
-                'success': int(terminated),
-                'done': int(truncated)
-            }
-            agent.ddpg.replay_buffer.append(transition)
+            transition = return_transition(state, next_state, reward, action, terminated, truncated)
+            agent.replay_buffer.append(transition)
             episode_reward += reward
-            agent.update()
+            if (episode*nsteps+step) % 50 == 0:
+                for _ in range(50):
+                    agent.update()
+            if episode % 10 == 0:
+                frames.append(env.render())
             if terminated or truncated:
                 break
             else:
                 obs = next_obs
         episode_rewards.append(episode_reward)
-        if (episode+1) % 10 == 0:
-            tqdm.write("Episode %d finished | Episode reward %f" % (episode+1, episode_reward))
+        if (episode+1) % 100 == 0:
+            tqdm.write("Episode %d finished when step %d | Episode reward %f" % (episode+1, step+1, episode_reward))
 
     # 累積報酬の移動平均を表示
     moving_average = np.convolve(episode_rewards, np.ones(num_average_epidodes)/num_average_epidodes, mode='valid')
@@ -106,5 +102,7 @@ if __name__ == '__main__':
     plt.xlabel('episode')
     plt.ylabel('rewards')
     plt.show()
+    
+    anim(frames)
     
     env.close()

@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from agents.utils import ReplayBuffer
 
 class ActorNetwork(nn.Module):
     def __init__(self, num_state, action_space, hidden_size=16, device="cpu"):
@@ -39,7 +38,7 @@ class CriticNetwork(nn.Module):
 
 class DDPG:
     def __init__(self, observation_space, action_space, gamma=0.99, polyak=0.995,
-                 lr=1e-3, batch_size=32, memory_size=50000, act_noise=0.1, device="cpu"):
+                 lr=1e-3, batch_size=32, act_noise=0.1, device="cpu"):
         self.num_state = observation_space.shape[0]
         self.num_action = action_space.shape[0]
         self.acion_space = action_space
@@ -57,7 +56,6 @@ class DDPG:
         for p in self.critic_target.parameters():
             p.requires_grad = False
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=lr)
-        self.replay_buffer = ReplayBuffer(memory_size)
         self.device = device
 
     # リプレイバッファからサンプルされたミニバッチをtensorに変換
@@ -75,11 +73,6 @@ class DDPG:
                 item = torch.tensor(batch[key], dtype=torch.float, device=self.device)
             return_list.append(item)
         return return_list
-
-    # actorとcriticを更新
-    def update(self):
-        batch = self.replay_buffer.sample(self.batch_size)
-        self.update_from_batch(batch)
     
     def update_from_batch(self, batch):
         states, actions, next_states, rewards, dones = self.batch_to_tensor(batch)
@@ -123,3 +116,25 @@ class DDPG:
            action =  self.actor(state_tensor.view(-1, self.num_state)).view(self.num_action).cpu().numpy()
         action += self.act_noise * np.random.randn(self.num_action)
         return np.clip(action, self.acion_space.low, self.acion_space.high)
+    
+    def state_dict(self):
+        state_dicts = {
+            "actor": self.actor.state_dict(),
+            "critic": self.critic.state_dict()
+        }
+        return state_dicts
+    
+    def save(self, path):
+        torch.save(self.state_dict(), path)
+    
+    def load(self, path):
+        state_dicts = torch.load(path, map_location=self.device)
+        self.load_state_dict(state_dicts)
+    
+    def load_state_dict(self, state_dicts):
+        self.actor.load_state_dict(state_dicts["actor"])
+        self.critic.load_state_dict(state_dicts["critic"])
+    
+    def eval(self):
+        self.actor.eval()
+        self.critic.eval()

@@ -8,6 +8,13 @@ def size_after_conv(h, ksize, stride=1, padding=0):
 def size_after_pooling(h, ksize):
     return h // ksize
 
+def mlp(sizes, activation, output_activation=nn.Identity):
+    layers = []
+    for j in range(len(sizes)-1):
+        act = activation if j < len(sizes)-2 else output_activation
+        layers += [nn.Linear(sizes[j], sizes[j+1]), act()]
+    return nn.Sequential(*layers)
+
 class Reshape(nn.Module):
     def __init__(self, shape):
         super(Reshape, self).__init__()
