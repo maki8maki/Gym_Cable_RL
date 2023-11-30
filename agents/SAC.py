@@ -90,6 +90,9 @@ class SAC():
         self.polyak = polyak
         self.gamma = gamma
         self.alpha = alpha
+        self.target_entropy = -torch.prod(torch.Tensor(action_space.shape[0]).to(device)).item()
+        self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
+        self.alpha_optim = optim.Adam([self.log_alpha], lr=lr)
         self.batch_size = batch_size
         self.device = device
     
@@ -134,7 +137,7 @@ class SAC():
         q2_pi = self.ac.q2(states, pi)
         q_pi = torch.min(q1_pi, q2_pi)
         
-        return (self.alpha * logp_pi - q_pi).mean()
+        return (self.alpha * logp_pi - q_pi).mean(), logp_pi
     
     def update_from_batch(self, batch):
         self.q_opt.zero_grad()
@@ -146,9 +149,15 @@ class SAC():
             p.requires_grad = False
         
         self.pi_opt.zero_grad()
-        loss_pi = self.compute_loss_pi(batch)
+        loss_pi, logp_pi = self.compute_loss_pi(batch)
         loss_pi.backward()
         self.pi_opt.step()
+        
+        alpha_loss = -(self.log_alpha * (logp_pi+self.target_entropy).detach()).mean()
+        self.alpha_optim.zero_grad()
+        alpha_loss.backward()
+        self.alpha_optim.step()
+        self.alpha = self.log_alpha.exp()
         
         for p in self.q_params:
             p.requires_grad = True
