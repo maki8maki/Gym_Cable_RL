@@ -46,3 +46,13 @@ def obs2state(obs, observation_space, trans, image_list=['rgb_image', 'depth_ima
         image = np.concatenate([image, normalized_obs[name]], axis=2)
     state = {'observation': normalized_obs['observation'], 'image': trans(image)}
     return state
+
+def return_transition(state, next_state, reward, action, terminated, truncated):
+    return {
+        'state': state,
+        'next_state': next_state,
+        'reward': reward,
+        'action': action,
+        'success': int(terminated), # タスクの成功
+        'done': int(terminated or truncated) # エピソードの終了（成功、失敗、エピソードの上限に達する）
+    }
