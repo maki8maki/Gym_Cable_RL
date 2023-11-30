@@ -4,10 +4,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from .utils import RL
 
 class ActorNetwork(nn.Module):
     def __init__(self, num_state, action_space, hidden_size=16, device="cpu"):
-        super(ActorNetwork, self).__init__()
+        super().__init__()
         self.action_mean = torch.tensor(0.5*(action_space.high+action_space.low), dtype=torch.float, device=device)
         self.action_halfwidth = torch.tensor(0.5*(action_space.high-action_space.low), dtype=torch.float, device=device)
         self.fc1 = nn.Linear(num_state, hidden_size)
@@ -22,7 +23,7 @@ class ActorNetwork(nn.Module):
 
 class CriticNetwork(nn.Module):
     def __init__(self, num_state, action_space, hidden_size=16, device="cpu"):
-        super(CriticNetwork, self).__init__()
+        super().__init__()
         self.action_mean = torch.tensor(0.5*(action_space.high+action_space.low), dtype=torch.float, device=device)
         self.action_halfwidth = torch.tensor(0.5*(action_space.high-action_space.low), dtype=torch.float, device=device)
         self.fc1 = nn.Linear(num_state+action_space.shape[0], hidden_size)
@@ -36,7 +37,7 @@ class CriticNetwork(nn.Module):
         q = self.fc3(h)
         return q
 
-class DDPG:
+class DDPG(RL):
     def __init__(self, observation_space, action_space, gamma=0.99, polyak=0.995,
                  lr=1e-3, batch_size=32, act_noise=0.1, device="cpu"):
         self.num_state = observation_space.shape[0]
@@ -57,22 +58,6 @@ class DDPG:
             p.requires_grad = False
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=lr)
         self.device = device
-
-    # リプレイバッファからサンプルされたミニバッチをtensorに変換
-    def batch_to_tensor(self, batch):
-        key_list = ['states', 'actions', 'next_states', 'rewards', 'dones']
-        return_list = []
-        for key in key_list:
-            if isinstance(batch[key], torch.Tensor):
-                item = batch[key]
-                if item.dtype != torch.float:
-                    item = item.to(torch.float)
-                if item.device != self.device:
-                    item = item.to(self.device)
-            else:
-                item = torch.tensor(batch[key], dtype=torch.float, device=self.device)
-            return_list.append(item)
-        return return_list
     
     def update_from_batch(self, batch):
         states, actions, next_states, rewards, dones = self.batch_to_tensor(batch)
@@ -103,7 +88,7 @@ class DDPG:
                 p_targ.data.add_((1-self.polyak) * p.data)
 
     # Q値が最大の行動を選択
-    def get_action(self, state):
+    def get_action(self, state, deterministic=False):
         if isinstance(state, torch.Tensor):
             state_tensor = state
             if state_tensor.dtype != torch.float:
@@ -114,26 +99,20 @@ class DDPG:
             state_tensor = torch.tensor(state, dtype=torch.float, device=self.device)
         with torch.no_grad():
            action =  self.actor(state_tensor.view(-1, self.num_state)).view(self.num_action).cpu().numpy()
-        action += self.act_noise * np.random.randn(self.num_action)
-        return np.clip(action, self.acion_space.low, self.acion_space.high)
+        if not deterministic:
+            action += self.act_noise * np.random.randn(self.num_action)
+            action = np.clip(action, self.acion_space.low, self.acion_space.high)
+        return action
     
     def state_dict(self):
-        state_dicts = {
+        return {
             "actor": self.actor.state_dict(),
             "critic": self.critic.state_dict()
         }
-        return state_dicts
     
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-    
-    def load(self, path):
-        state_dicts = torch.load(path, map_location=self.device)
-        self.load_state_dict(state_dicts)
-    
-    def load_state_dict(self, state_dicts):
-        self.actor.load_state_dict(state_dicts["actor"])
-        self.critic.load_state_dict(state_dicts["critic"])
+    def load_state_dict(self, state_dict):
+        self.actor.load_state_dict(state_dict["actor"])
+        self.critic.load_state_dict(state_dict["critic"])
     
     def eval(self):
         self.actor.eval()

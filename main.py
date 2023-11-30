@@ -91,8 +91,8 @@ if __name__ == '__main__':
                 break
             else:
                 obs = next_obs
-        episode_rewards.append(episode_reward)
-        if (episode+1) % 100 == 0:
+        episode_rewards.append(episode_reward/(step+1))
+        if (episode+1) % (nepisodes/10) == 0:
             tqdm.write("Episode %d finished when step %d | Episode reward %f" % (episode+1, step+1, episode_reward))
 
     # 累積報酬の移動平均を表示

@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions.normal import Normal
-from .utils import mlp
+from .utils import mlp, RL
 
 # OpenAI Spinning UPを参考（URL:https://github.com/openai/spinningup.git）
 
@@ -77,7 +77,7 @@ class MLPActorCritic(nn.Module):
             a, _ = self.pi(state, deterministic, False)
             return a.cpu().numpy()
 
-class SAC():
+class SAC(RL):
     def __init__(self, observation_space, action_space, ac_kwargs=dict(), gamma=0.99, polyak=0.995,
                  lr=1e-3, alpha=0.2, batch_size=32, device="cpu"):
         self.ac = MLPActorCritic(observation_space, action_space, device=device, **ac_kwargs).to(device)
@@ -95,21 +95,6 @@ class SAC():
         self.alpha_optim = optim.Adam([self.log_alpha], lr=lr)
         self.batch_size = batch_size
         self.device = device
-    
-    def batch_to_tensor(self, batch, key_list=['states', 'actions', 'next_states', 'rewards', 'dones']
-        ):
-        return_list = []
-        for key in key_list:
-            if isinstance(batch[key], torch.Tensor):
-                item = batch[key]
-                if item.dtype != torch.float:
-                    item = item.to(torch.float)
-                if item.device != self.device:
-                    item = item.to(self.device)
-            else:
-                item = torch.tensor(batch[key], dtype=torch.float, device=self.device)
-            return_list.append(item)
-        return return_list
     
     def compute_loss_q(self, batch):
         states, actions, next_states, rewards, dones = self.batch_to_tensor(batch)
@@ -180,13 +165,6 @@ class SAC():
     
     def state_dict(self):
         return self.ac.state_dict()
-    
-    def save(self, path):
-        torch.save(self.state_dict(), path)
-    
-    def load(self, path):
-        state_dict = torch.load(path, map_location=self.device)
-        self.load_state_dict(state_dict)
     
     def load_state_dict(self, state_dict):
         self.ac.load_state_dict(state_dict)
