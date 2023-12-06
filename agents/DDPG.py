@@ -117,3 +117,7 @@ class DDPG(RL):
     def eval(self):
         self.actor.eval()
         self.critic.eval()
+    
+    def train(self):
+        self.actor.train()
+        self.critic.train()

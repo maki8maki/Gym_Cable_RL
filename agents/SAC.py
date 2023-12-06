@@ -171,3 +171,6 @@ class SAC(RL):
     
     def eval(self):
         self.ac.eval()
+    
+    def train(self):
+        self.ac.train()
