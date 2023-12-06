@@ -14,7 +14,7 @@ def set_seed(seed):
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-def anim(frames, titles=None, filename=None):
+def anim(frames, titles=None, filename=None, show=True):
     plt.figure(figsize=(frames[0].shape[1]/72.0/4, frames[0].shape[0]/72.0/4), dpi=72)
     patch = plt.imshow(frames[0])
     plt.axis('off')
@@ -27,7 +27,8 @@ def anim(frames, titles=None, filename=None):
     anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=50)
     if filename is not None:
         anim.save(filename, writer="ffmpeg")
-    plt.show()
+    if show:
+        plt.show()
 
 def normalize_state(state, observation_space):
     # 連続値の状態を[-1,1]の範囲に正規化

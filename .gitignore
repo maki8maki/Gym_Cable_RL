@@ -10,7 +10,12 @@ MUJOCO_LOG.TXT
 
 # for RL params
 params.json
+*.pth
 
-# for video
+# for video or image
 *.mp4
 *.gif
+*.pdf
+*.png
+*.jpg
+*.jpeg
