@@ -25,7 +25,7 @@ class Reshape(nn.Module):
         return x.reshape(self.shape)
 
 class ReplayBuffer:
-    def __init__(self, memory_size) -> None:
+    def __init__(self, memory_size):
         self.memory_size = memory_size
         self.memory = deque([], maxlen = memory_size)
 
@@ -42,7 +42,7 @@ class ReplayBuffer:
         dones       = np.array([self.memory[index]['done'] for index in batch_indexes])
         return {'states': states, 'next_states': next_states, 'rewards': rewards, 'actions': actions, 'successes': successes, 'dones': dones}
 
-class RL():
+class RL:
     def __init__(self):
         pass
     
@@ -80,4 +80,7 @@ class RL():
         raise NotImplementedError()
     
     def eval(self):
+        raise NotImplementedError()
+    
+    def train(self):
         raise NotImplementedError()
