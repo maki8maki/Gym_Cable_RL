@@ -65,8 +65,7 @@ class MLPQFunction(nn.Module):
         return torch.squeeze(q, -1)
 
 class MLPActorCritic(nn.Module):
-    def __init__(self, observation_space, action_space, hidden_sizes=(256,256),
-                 activation=nn.ReLU, device='cpu'):
+    def __init__(self, observation_space, action_space, hidden_sizes=(256,256), activation=nn.ReLU, device='cpu'):
         super().__init__()
         self.pi = SquashedGaussianMLPActor(observation_space, action_space, hidden_sizes, activation, device)
         self.q1 = MLPQFunction(observation_space, action_space, hidden_sizes, activation, device)
