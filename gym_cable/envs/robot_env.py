@@ -97,7 +97,7 @@ class BaseRobotEnv(GoalEnv):
     def compute_truncated(self, obs, goal, info):
         info['ik_success'] = self.ik_success
         info['contacted'] = (self.data.ncon > 5)
-        is_far = (self._utils.goal_distance(obs[:3], goal[:3]) > 0.5)
+        is_far = (self._utils.goal_distance(obs[:3], goal[:3]) > 0.2)
         info['is_far'] = is_far
         return (not info['ik_success']) or info['contacted'] or info['is_far']
 
