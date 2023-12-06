@@ -14,15 +14,19 @@ def set_seed(seed):
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-def anim(frames):
+def anim(frames, titles=None, filename=None):
     plt.figure(figsize=(frames[0].shape[1]/72.0/4, frames[0].shape[0]/72.0/4), dpi=72)
     patch = plt.imshow(frames[0])
     plt.axis('off')
 
     def animate(i):
         patch.set_data(frames[i])
+        if titles is not None:
+            plt.title(titles[i])
 
     anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=50)
+    if filename is not None:
+        anim.save(filename, writer="ffmpeg")
     plt.show()
 
 def normalize_state(state, observation_space):
