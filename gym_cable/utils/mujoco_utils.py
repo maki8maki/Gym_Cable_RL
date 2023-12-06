@@ -35,6 +35,16 @@ def goal_distance(goal_a, goal_b):
     assert goal_a.shape == goal_b.shape
     return np.linalg.norm(goal_a - goal_b, axis=-1)
 
+def calc_err_norm(cur, goal):
+    assert cur.shape == goal.shape
+    assert cur.shape[-1] == 6
+    position_err = goal_distance(cur[:3], goal[:3])
+    err_rot_quat = rotations.subtract_eular2quat(cur[3:], goal[3:])
+    err_rot = np.empty(3, dtype=err_rot_quat.dtype)
+    mujoco.mju_quat2Vel(err_rot, err_rot_quat, 1)
+    posture_err = np.linalg.norm(err_rot)
+    return position_err, posture_err
+
 def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=None, joint_names=None,
                         tol=1e-14, rot_weight=1.0, regularization_threshold=0.1, regularization_strength=3e-2,
                         max_update_norm=2.0, progress_thresh=20.0, max_steps=100, inplace=False):

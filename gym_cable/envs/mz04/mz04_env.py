@@ -25,7 +25,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             obj_range,
             target_range,
             distance_threshold,
-            eular_threshold,
+            rotation_threshold,
             rot_weight,
             **kwargs
         ):
@@ -45,7 +45,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             self.obj_range = obj_range
             self.target_range = target_range
             self.distance_threshold = distance_threshold
-            self.eular_threshold = eular_threshold
+            self.rotation_threshold = rotation_threshold
             self.rot_weight = rot_weight
 
             super().__init__(n_actions=6, **kwargs)
@@ -54,12 +54,8 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
         # ----------------------------
 
         def compute_reward(self, obs, goal, info):
-            err_norm = 0.0
-            err_norm += self._utils.goal_distance(obs[:3], goal[:3])
-            err_rot_quat = rotations.subtract_eular2quat(obs[3:], goal[3:])
-            err_rot = np.empty(3, dtype=err_rot_quat.dtype)
-            self._mujoco.mju_quat2Vel(err_rot, err_rot_quat, 1)
-            err_norm += np.linalg.norm(err_rot) * self.rot_weight
+            position_err, posture_err = self._utils.calc_err_norm(obs, goal)
+            err_norm = position_err + posture_err * self.rot_weight
             reward = -err_norm
             if self.terminated:
                 reward += 100
@@ -110,9 +106,8 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             return np.concatenate([goal_pos, goal_rot])
 
         def _is_success(self, obs, goal):
-            dis = self._utils.goal_distance(obs[:3], goal[:3])
-            eular_diff = rotations.subtract_euler(obs[3:], goal[3:])
-            return (dis < self.distance_threshold) and (eular_diff < self.eular_threshold).all()
+            position_err, posture_err = self._utils.calc_err_norm(obs, goal)
+            return (position_err < self.distance_threshold) and (posture_err < self.rotation_threshold)
 
     return BaseMZ04Env
 
