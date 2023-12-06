@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     obs, _ = env.reset(seed=seed)
     # frames = [env.render()]
-    for i in tqdm(range(memory_size)):
+    for _ in tqdm(range(memory_size)):
         action = env.action_space.sample()
         next_obs, reward, terminated, truncated, _ = env.step(action)
         state = obs2state(obs, env.observation_space, trans)
@@ -98,7 +98,6 @@ if __name__ == '__main__':
             else:
                 obs = next_obs
         episode_rewards.append(episode_reward)
-        
         if (episode+1) % (nepisodes/10) == 0:
             tqdm.write("Episode %d finished when step %d | Episode reward %f" % (episode+1, step+1, episode_reward))
         if (episode+1) % (nepisodes/50) == 0:
@@ -115,18 +114,6 @@ if __name__ == '__main__':
             test_episodes.append(episode)
             test_rewards.append(test_reward/ntestepisodes)
             agent.train()
-
-    plt.plot(episode_rewards)
-    plt.title('Episode Rewards')
-    plt.xlabel('episode')
-    plt.ylabel('rewards')
-    plt.show()
-    
-    plt.plot(test_episodes, test_rewards)
-    plt.title('Test Rewards')
-    plt.xlabel('episode')
-    plt.ylabel('rewards')
-    plt.show()
     
     agent.eval()
     for testepisode in range(ntestepisodes):
@@ -137,7 +124,22 @@ if __name__ == '__main__':
             next_obs, reward, terminated, truncated, _ = env.step(action)
             frames.append(env.render())
             titles.append("Episode "+str(testepisode+1))
+
+    plt.plot(episode_rewards)
+    plt.title('Episode Rewards')
+    plt.xlabel('episode')
+    plt.ylabel('rewards')
+    # plt.savefig('ep_r.pdf')
+    plt.show()
     
-    anim(frames, titles=titles, filename="test.mp4")
+    plt.plot(test_episodes, test_rewards)
+    plt.title('Test Rewards')
+    plt.xlabel('episode')
+    plt.ylabel('rewards')
+    # plt.savefig('te_r.pdf')
+    plt.show()
+    
+    anim(frames, titles=titles)
+    # agent.save("dmil.pth")
     
     env.close()
