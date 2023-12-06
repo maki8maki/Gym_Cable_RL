@@ -92,6 +92,7 @@ if __name__ == '__main__':
             update_count += 1
             # if episode % 100 == 0:
             #     frames.append(env.render())
+            #     titles.append("Episode "+str(episode+1))
             if terminated or truncated:
                 break
             else:
