@@ -1,4 +1,3 @@
-import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import cv2
@@ -24,6 +23,7 @@ if __name__ == '__main__':
     memory_size = data["memory_size"]
     img_width = data["img_width"]
     img_height = data["img_height"]
+    ntestepisodes = data["ntestepisodes"]
     
     if torch.cuda.is_available():
         device = "cuda"
@@ -69,8 +69,12 @@ if __name__ == '__main__':
             obs = next_obs
 
     episode_rewards = []
-    num_average_epidodes = 5
+    test_episodes = []
+    test_rewards = []
     frames = []
+    titles = []
+    update_every = 50
+    update_count = 1
     for episode in tqdm(range(nepisodes)):
         obs, _ = env.reset()
         episode_reward = 0
@@ -82,27 +86,57 @@ if __name__ == '__main__':
             transition = return_transition(state, next_state, reward, action, terminated, truncated)
             agent.replay_buffer.append(transition)
             episode_reward += reward
-            if (episode*nsteps+step) % 50 == 0:
-                for _ in range(50):
+            if update_count % update_every == 0:
+                for _ in range(update_every):
                     agent.update()
-            if episode % 10 == 0:
-                frames.append(env.render())
+            update_count += 1
+            # if episode % 100 == 0:
+            #     frames.append(env.render())
             if terminated or truncated:
                 break
             else:
                 obs = next_obs
-        episode_rewards.append(episode_reward/(step+1))
+        episode_rewards.append(episode_reward)
+        
         if (episode+1) % (nepisodes/10) == 0:
             tqdm.write("Episode %d finished when step %d | Episode reward %f" % (episode+1, step+1, episode_reward))
+        if (episode+1) % (nepisodes/50) == 0:
+            # Test
+            agent.eval()
+            test_reward = 0
+            for testepisode in range(ntestepisodes):
+                obs, _ = env.reset()
+                terminated, truncated = False, False
+                while not(terminated or truncated):
+                    action = agent.get_action(state, deterministic=True)
+                    next_obs, reward, terminated, truncated, _ = env.step(action)
+                    test_reward += reward
+            test_episodes.append(episode)
+            test_rewards.append(test_reward/ntestepisodes)
+            agent.train()
 
-    # 累積報酬の移動平均を表示
-    moving_average = np.convolve(episode_rewards, np.ones(num_average_epidodes)/num_average_epidodes, mode='valid')
-    plt.plot(np.arange(len(moving_average)),moving_average)
-    plt.title('DDPG: average rewards in %d episodes' % num_average_epidodes)
+    plt.plot(episode_rewards)
+    plt.title('Episode Rewards')
     plt.xlabel('episode')
     plt.ylabel('rewards')
     plt.show()
     
-    anim(frames)
+    plt.plot(test_episodes, test_rewards)
+    plt.title('Test Rewards')
+    plt.xlabel('episode')
+    plt.ylabel('rewards')
+    plt.show()
+    
+    agent.eval()
+    for testepisode in range(ntestepisodes):
+        obs, _ = env.reset()
+        terminated, truncated = False, False
+        while not(terminated or truncated):
+            action = agent.get_action(state, deterministic=True)
+            next_obs, reward, terminated, truncated, _ = env.step(action)
+            frames.append(env.render())
+            titles.append("Episode "+str(testepisode+1))
+    
+    anim(frames, titles=titles, filename="test.mp4")
     
     env.close()
