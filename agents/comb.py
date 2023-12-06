@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-import torchvision.transforms.functional as TF
+import torchvision.transforms.functional as F
 from gymnasium import spaces
 from agents.utils import ReplayBuffer
 from agents.DCAE import DCAE
@@ -20,12 +20,12 @@ class Comb:
         self.replay_buffer = ReplayBuffer(memory_size)
         self.device = device
     
-    def get_action(self, state):
-        image_tensor = TF.to_tensor(state['image']).to(self.device)
+    def get_action(self, state, deterministic=False):
+        image_tensor = F.to_tensor(state['image']).to(self.device)
         h = self.fe.forward(image_tensor).squeeze().detach() * 2.0 - 1.0
         obs_tensor = torch.tensor(state['observation'], dtype=torch.float, device=self.device)
         _state = torch.cat((h, obs_tensor))
-        return self.rl.get_action(_state)
+        return self.rl.get_action(_state, deterministic)
     
     def batch_to_hidden_state(self, batch):
         imgs, rbs, next_imgs, next_rbs = [], [], [], []
@@ -73,6 +73,10 @@ class Comb:
     def eval(self):
         self.fe.eval()
         self.rl.eval()
+    
+    def train(self):
+        self.fe.train()
+        self.rl.train()
 
 class DCAE_DDPG(Comb):
     def __init__(self, kwargs):
