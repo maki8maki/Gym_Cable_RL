@@ -313,12 +313,13 @@ def quat_identity():
 
 def quat2axisangle(quat):
     theta = 0
-    axis = np.array([0, 0, 1])
+    axis = np.array([1, 0, 0])
     sin_theta = np.linalg.norm(quat[1:])
 
     if sin_theta > 0.0001:
-        theta = 2 * np.arcsin(sin_theta)
-        theta *= 1 if quat[0] >= 0 else -1
+        theta = 2 * np.arctan2(sin_theta, quat[0])
+        if (theta > np.pi):
+            theta -= 2 * np.pi
         axis = quat[1:] / sin_theta
 
     return axis, theta
