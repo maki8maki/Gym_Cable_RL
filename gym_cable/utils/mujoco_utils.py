@@ -40,9 +40,7 @@ def calc_err_norm(cur, goal):
     assert cur.shape[-1] == 6
     position_err = goal_distance(cur[:3], goal[:3])
     err_rot_quat = rotations.subtract_eular2quat(cur[3:], goal[3:])
-    err_rot = np.empty(3, dtype=err_rot_quat.dtype)
-    mujoco.mju_quat2Vel(err_rot, err_rot_quat, 1)
-    posture_err = np.linalg.norm(err_rot)
+    _, posture_err = rotations.quat2axisangle(err_rot_quat)
     return position_err, posture_err
 
 def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=None, joint_names=None,
