@@ -53,7 +53,7 @@ if __name__ == '__main__':
     }
     
     agent = DCAE_SAC(config)
-    model_path = os.path.join(pwd, "test_1deg-action.pth")
+    model_path = os.path.join(pwd, "model", "test_1deg-action.pth")
     agent.load(model_path)
     trans = lambda img: cv2.resize(img, (img_width, img_height))
 
