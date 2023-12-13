@@ -3,13 +3,15 @@ import torch
 import cv2
 import os
 import json
+import numpy as np
 from absl import logging
 from tqdm import tqdm
+from gymnasium import spaces
 import gymnasium as gym
 import gym_cable
 
-from utils import *
-from agents.comb import *
+from utils import set_seed, anim, obs2state, return_transition
+from agents.comb import DCAE_SAC
 
 if __name__ == '__main__':
     seed = 42
@@ -33,11 +35,12 @@ if __name__ == '__main__':
     
     gym_cable.register_robotics_envs()
     env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nepisodes)
+    action_space = spaces.Box(-1.0, 1.0, shape=(1,), dtype="float32")
     config = {
         "image_size": (img_height, img_width, 4),
         "hidden_dim": data["hidden_dim"],
         "observation_space": env.observation_space["observation"],
-        "action_space": env.action_space,
+        "action_space": action_space,
         "memory_size": memory_size,
         "fe_kwargs": {
             "lr": data["lr"],
@@ -55,9 +58,11 @@ if __name__ == '__main__':
 
     obs, _ = env.reset(seed=seed)
     # frames = [env.render()]
+    ac = np.zeros((5,))
     for _ in tqdm(range(memory_size)):
-        action = env.action_space.sample()
-        next_obs, reward, terminated, truncated, _ = env.step(action)
+        action = action_space.sample()
+        next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
+        # next_obs, reward, terminated, truncated, _ = env.step(action)
         state = obs2state(obs, env.observation_space, trans)
         next_state = obs2state(next_obs, env.observation_space, trans)
         transition = return_transition(state, next_state, reward, action, terminated, truncated)
@@ -78,10 +83,14 @@ if __name__ == '__main__':
     for episode in tqdm(range(nepisodes)):
         obs, _ = env.reset()
         episode_reward = 0
+        # if (episode+1) % 100 == 0:
+        #     frames.append(env.render())
+        #     titles.append("Episode "+str(episode+1))
         for step in range(nsteps):
             state = obs2state(obs, env.observation_space, trans)
             action = agent.get_action(state)
-            next_obs, reward, terminated, truncated, _ = env.step(action)
+            next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
+            # next_obs, reward, terminated, truncated, _ = env.step(action)
             next_state = obs2state(next_obs, env.observation_space, trans)
             transition = return_transition(state, next_state, reward, action, terminated, truncated)
             agent.replay_buffer.append(transition)
@@ -90,7 +99,7 @@ if __name__ == '__main__':
                 for _ in range(update_every):
                     agent.update()
             update_count += 1
-            # if episode % 100 == 0:
+            # if (episode+1) % 100 == 0:
             #     frames.append(env.render())
             #     titles.append("Episode "+str(episode+1))
             if terminated or truncated:
@@ -106,40 +115,48 @@ if __name__ == '__main__':
             test_reward = 0
             for testepisode in range(ntestepisodes):
                 obs, _ = env.reset()
-                terminated, truncated = False, False
-                while not(terminated or truncated):
+                for _ in range(nsteps):
+                    state = obs2state(obs, env.observation_space, trans)
                     action = agent.get_action(state, deterministic=True)
-                    next_obs, reward, terminated, truncated, _ = env.step(action)
+                    next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
+                    # next_obs, reward, terminated, truncated, _ = env.step(action)
                     test_reward += reward
+                    if terminated or truncated:
+                        break
+                    else:
+                        obs = next_obs
             test_episodes.append(episode)
             test_rewards.append(test_reward/ntestepisodes)
             agent.train()
     
     agent.eval()
-    for testepisode in range(ntestepisodes):
-        obs, _ = env.reset()
-        terminated, truncated = False, False
-        while not(terminated or truncated):
-            action = agent.get_action(state, deterministic=True)
-            next_obs, reward, terminated, truncated, _ = env.step(action)
-            frames.append(env.render())
-            titles.append("Episode "+str(testepisode+1))
+    obs, _ = env.reset()
+    for step in range(nsteps):
+        state = obs2state(obs, env.observation_space, trans)
+        action = agent.get_action(state, deterministic=True)
+        next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
+        if terminated or truncated:
+            break
+        else:
+            obs = next_obs
+        frames.append(env.render())
+        titles.append("Step "+str(step+1))
 
     plt.plot(episode_rewards)
     plt.title('Episode Rewards')
     plt.xlabel('episode')
     plt.ylabel('rewards')
-    # plt.savefig('ep_r.pdf')
+    # plt.savefig('out/ep_r.pdf')
     plt.show()
     
     plt.plot(test_episodes, test_rewards)
     plt.title('Test Rewards')
     plt.xlabel('episode')
     plt.ylabel('rewards')
-    # plt.savefig('te_r.pdf')
+    # plt.savefig('out/te_r.pdf')
     plt.show()
     
-    anim(frames, titles=titles)
-    # agent.save("dmil.pth")
+    anim(frames, titles=titles, filename="out/test_1deg-action.mp4")
+    agent.save("model/test_1deg-action.pth")
     
     env.close()
