@@ -39,8 +39,8 @@ def normalize_state(state, observation_space):
             state_halfwidth = 0.5 * (observation_space[key].high - observation_space[key].low)
             normalized_state[key] = ((state[key].astype(np.float32) - state_mean) / state_halfwidth).astype(np.float32)
     else:
-        state_mean = 0.5 * (observation_space[key].high + observation_space[key].low)
-        state_halfwidth = 0.5 * (observation_space[key].high - observation_space[key].low)
+        state_mean = 0.5 * (observation_space.high + observation_space.low)
+        state_halfwidth = 0.5 * (observation_space.high - observation_space.low)
         normalized_state = ((state.astype(np.float32) - state_mean) / state_halfwidth).astype(np.float32)
     return normalized_state
 
