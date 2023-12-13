@@ -12,12 +12,15 @@ from gymnasium import spaces
 import gymnasium as gym
 import gym_cable
 
-from utils import set_seed, anim, obs2state, return_transition
+from utils import set_seed, anim, obs2state, return_transition, yes_no_input
 from agents.comb import DCAE_SAC
 
 if __name__ == '__main__':
     seed = 42
     set_seed(seed)
+    
+    if not yes_no_input("logdir for tensorboard and filename of animation and model parameters"):
+        exit()
     
     pwd = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(pwd, "params.json"), "r") as f:
@@ -36,7 +39,7 @@ if __name__ == '__main__':
         logging.warning("You are using CPU!!")
     
     gym_cable.register_robotics_envs()
-    env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nepisodes)
+    env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps)
     action_space = spaces.Box(-1.0, 1.0, shape=(1,), dtype="float32")
     config = {
         "image_size": (img_height, img_width, 4),
@@ -59,7 +62,7 @@ if __name__ == '__main__':
     trans = lambda img: cv2.resize(img, (img_width, img_height))
     
     now = datetime.now()
-    writer = SummaryWriter(log_dir='./logs/'+now.strftime('%Y%m%d-%H%M'))
+    writer = SummaryWriter(log_dir='./logs/DCAE_SAC/'+now.strftime('%Y%m%d-%H%M'))
 
     obs, _ = env.reset(seed=seed)
     # frames = [env.render()]

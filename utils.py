@@ -61,3 +61,12 @@ def return_transition(state, next_state, reward, action, terminated, truncated):
         'success': int(terminated), # タスクの成功
         'done': int(terminated or truncated) # エピソードの終了（成功、失敗、エピソードの上限に達する）
     }
+
+def yes_no_input(check):
+    while True:
+        print("\n### Please check \033[31m" + check + "\033[0m ###")
+        choice = input("Are you sure you want to continue running this code? [y/N]: ").lower()
+        if choice in ['y', 'ye', 'yes']:
+            return True
+        elif choice in ['n', 'no']:
+            return False
