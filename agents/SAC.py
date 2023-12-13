@@ -70,6 +70,9 @@ class MLPActorCritic(nn.Module):
         self.pi = SquashedGaussianMLPActor(observation_space, action_space, hidden_sizes, activation, device)
         self.q1 = MLPQFunction(observation_space, action_space, hidden_sizes, activation, device)
         self.q2 = MLPQFunction(observation_space, action_space, hidden_sizes, activation, device)
+        for m in self.modules():
+            if isinstance(m, (nn.Conv2d, nn.Linear)):
+                nn.init.orthogonal_(m.weight)
     
     def get_action(self, state, deterministic=False):
         with torch.no_grad():
