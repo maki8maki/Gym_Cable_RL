@@ -4,8 +4,10 @@ import cv2
 import os
 import json
 import numpy as np
+from datetime import datetime
 from absl import logging
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 from gymnasium import spaces
 import gymnasium as gym
 import gym_cable
@@ -55,6 +57,9 @@ if __name__ == '__main__':
     
     agent = DCAE_SAC(config)
     trans = lambda img: cv2.resize(img, (img_width, img_height))
+    
+    now = datetime.now()
+    writer = SummaryWriter(log_dir='./logs/'+now.strftime('%Y%m%d-%H%M'))
 
     obs, _ = env.reset(seed=seed)
     # frames = [env.render()]
@@ -107,15 +112,18 @@ if __name__ == '__main__':
             else:
                 obs = next_obs
         episode_rewards.append(episode_reward)
+        writer.add_scalar('train/reward', episode_reward, episode)
+        writer.add_scalar('train/step', step, episode)
         if (episode+1) % (nepisodes/10) == 0:
             tqdm.write("Episode %d finished when step %d | Episode reward %f" % (episode+1, step+1, episode_reward))
         if (episode+1) % (nepisodes/50) == 0:
             # Test
             agent.eval()
             test_reward = 0
+            steps = 0
             for testepisode in range(ntestepisodes):
                 obs, _ = env.reset()
-                for _ in range(nsteps):
+                for step in range(nsteps):
                     state = obs2state(obs, env.observation_space, trans)
                     action = agent.get_action(state, deterministic=True)
                     next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
@@ -125,8 +133,11 @@ if __name__ == '__main__':
                         break
                     else:
                         obs = next_obs
+                steps += step
             test_episodes.append(episode)
             test_rewards.append(test_reward/ntestepisodes)
+            writer.add_scalar('test/reward', test_reward/ntestepisodes, episode)
+            writer.add_scalar('test/step', steps/ntestepisodes, episode)
             agent.train()
     
     agent.eval()
@@ -141,22 +152,9 @@ if __name__ == '__main__':
             obs = next_obs
         frames.append(env.render())
         titles.append("Step "+str(step+1))
-
-    plt.plot(episode_rewards)
-    plt.title('Episode Rewards')
-    plt.xlabel('episode')
-    plt.ylabel('rewards')
-    # plt.savefig('out/ep_r.pdf')
-    plt.show()
-    
-    plt.plot(test_episodes, test_rewards)
-    plt.title('Test Rewards')
-    plt.xlabel('episode')
-    plt.ylabel('rewards')
-    # plt.savefig('out/te_r.pdf')
-    plt.show()
     
     anim(frames, titles=titles, filename="out/test_1deg-action.mp4")
     agent.save("model/test_1deg-action.pth")
     
     env.close()
+    writer.close()
