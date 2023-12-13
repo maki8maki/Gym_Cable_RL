@@ -95,8 +95,8 @@ class SAC(RL):
         self.batch_size = batch_size
         self.device = device
     
-    def compute_loss_q(self, batch):
-        states, actions, next_states, rewards, dones = self.batch_to_tensor(batch)
+    def compute_loss_q(self, tensors):
+        states, actions, next_states, rewards, dones = tensors
         q1 = self.ac.q1(states, actions)
         q2 = self.ac.q2(states, actions)
         
@@ -114,18 +114,24 @@ class SAC(RL):
         loss_q2 = ((q2-target_q)**2).mean()
         return loss_q1 + loss_q2
     
-    def compute_loss_pi(self, batch):
-        states = self.batch_to_tensor(batch, ['states'])[0]
+    def compute_loss_pi(self, states):
         pi, logp_pi = self.ac.pi(states)
         q1_pi = self.ac.q1(states, pi)
         q2_pi = self.ac.q2(states, pi)
         q_pi = torch.min(q1_pi, q2_pi)
         
         return (self.alpha * logp_pi - q_pi).mean(), logp_pi
+
+    def compute_loss_alpha(self, states):
+        _, logp_pi = self.ac.pi(states)
+        return -(self.log_alpha * (logp_pi+self.target_entropy).detach()).mean()
     
     def update_from_batch(self, batch):
+        tensors = self.batch_to_tensor(batch)
+        states = tensors[0]
+
         self.q_opt.zero_grad()
-        loss_q = self.compute_loss_q(batch)
+        loss_q = self.compute_loss_q(tensors)
         loss_q.backward()
         self.q_opt.step()
         
@@ -133,11 +139,11 @@ class SAC(RL):
             p.requires_grad = False
         
         self.pi_opt.zero_grad()
-        loss_pi, logp_pi = self.compute_loss_pi(batch)
+        loss_pi, _ = self.compute_loss_pi(states)
         loss_pi.backward()
         self.pi_opt.step()
         
-        alpha_loss = -(self.log_alpha * (logp_pi+self.target_entropy).detach()).mean()
+        alpha_loss = self.compute_loss_alpha(states)
         self.alpha_optim.zero_grad()
         alpha_loss.backward()
         self.alpha_optim.step()
