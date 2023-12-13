@@ -16,3 +16,6 @@ model/*
 # for output(video, image, graph...)
 out/*
 !out/.gitkeep
+
+# for tensorboard log
+logs/*
