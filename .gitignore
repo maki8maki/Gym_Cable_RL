@@ -19,3 +19,7 @@ out/*
 
 # for tensorboard log
 logs/*
+
+# for gathered data
+data/*
+!data/.gitkeep
