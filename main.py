@@ -115,8 +115,8 @@ if __name__ == '__main__':
             else:
                 obs = next_obs
         episode_rewards.append(episode_reward)
-        writer.add_scalar('train/reward', episode_reward, episode)
-        writer.add_scalar('train/step', step, episode)
+        writer.add_scalar('train/reward', episode_reward, episode+1)
+        writer.add_scalar('train/step', step, episode+1)
         if (episode+1) % (nepisodes/10) == 0:
             tqdm.write("Episode %d finished when step %d | Episode reward %f" % (episode+1, step+1, episode_reward))
         if (episode+1) % (nepisodes/50) == 0:
@@ -139,8 +139,8 @@ if __name__ == '__main__':
                 steps += step
             test_episodes.append(episode)
             test_rewards.append(test_reward/ntestepisodes)
-            writer.add_scalar('test/reward', test_reward/ntestepisodes, episode)
-            writer.add_scalar('test/step', steps/ntestepisodes, episode)
+            writer.add_scalar('test/reward', test_reward/ntestepisodes, episode+1)
+            writer.add_scalar('test/step', steps/ntestepisodes, episode+1)
             agent.train()
     
     agent.eval()
