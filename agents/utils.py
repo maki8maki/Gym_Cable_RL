@@ -98,9 +98,8 @@ class ReplayBuffer:
         next_states = np.array([self.memory[index]['next_state'] for index in batch_indexes])
         rewards     = np.array([self.memory[index]['reward'] for index in batch_indexes])
         actions     = np.array([self.memory[index]['action'] for index in batch_indexes])
-        successes   = np.array([self.memory[index]['success'] for index in batch_indexes])
         dones       = np.array([self.memory[index]['done'] for index in batch_indexes])
-        return {'states': states, 'next_states': next_states, 'rewards': rewards, 'actions': actions, 'successes': successes, 'dones': dones}
+        return {'states': states, 'next_states': next_states, 'rewards': rewards, 'actions': actions, 'dones': dones}
 
 class RL:
     def __init__(self):
