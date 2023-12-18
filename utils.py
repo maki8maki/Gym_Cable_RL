@@ -44,13 +44,16 @@ def normalize_state(state, observation_space):
         normalized_state = ((state.astype(np.float32) - state_mean) / state_halfwidth).astype(np.float32)
     return normalized_state
 
-def obs2state(obs, observation_space, trans, image_list=['rgb_image', 'depth_image']):
+def obs2state(obs, observation_space, trans=None, image_list=['rgb_image', 'depth_image']):
     normalized_obs = normalize_state(obs, observation_space)
-    image = normalized_obs[image_list[0]]
-    for name in image_list[1:]:
-        image = np.concatenate([image, normalized_obs[name]], axis=2)
-    state = {'observation': normalized_obs['observation'], 'image': trans(image)}
-    return state
+    if len(image_list) > 0:
+        image = normalized_obs[image_list[0]]
+        for name in image_list[1:]:
+            image = np.concatenate([image, normalized_obs[name]], axis=2)
+        state = {'observation': normalized_obs['observation'], 'image': trans(image)}
+        return state
+    else:
+        return normalized_obs['observation']
 
 def return_transition(state, next_state, reward, action, terminated, truncated):
     return {
@@ -58,8 +61,7 @@ def return_transition(state, next_state, reward, action, terminated, truncated):
         'next_state': next_state,
         'reward': reward,
         'action': action,
-        'success': int(terminated), # タスクの成功
-        'done': int(terminated or truncated) # エピソードの終了（成功、失敗、エピソードの上限に達する）
+        'done': int(terminated or truncated) # エピソードの終了（成功、失敗）
     }
 
 def yes_no_input(check):
