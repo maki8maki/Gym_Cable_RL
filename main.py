@@ -59,7 +59,7 @@ if __name__ == '__main__':
     }
     
     agent = DCAE_SAC(config)
-    trans = lambda img: cv2.resize(img, (img_width, img_height))
+    trans = lambda img: cv2.resize(img, (img_width, img_height)) * 0.5 + 0.5
     
     now = datetime.now()
     writer = SummaryWriter(log_dir='./logs/DCAE_SAC/'+now.strftime('%Y%m%d-%H%M'))
