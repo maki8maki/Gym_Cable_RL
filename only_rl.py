@@ -112,18 +112,25 @@ if __name__ == '__main__':
         if (episode+1) % (nepisodes/10) == 0:
             tqdm.write("Episode %d finished when step %d | Episode reward %f" % (episode+1, step+1, episode_reward))
         if (episode+1) % (nepisodes/50) == 0:
+        # if (episode+1) % 10 == 0:
             # Test
             agent.eval()
             test_reward = 0
             steps = 0
             for testepisode in range(ntestepisodes):
                 obs, _ = env.reset()
+                # if testepisode == 0:
+                #     frames.append(env.render())
+                #     titles.append("Episode "+str(episode+1))
                 for step in range(nsteps):
                     state = obs2state(obs, env.observation_space, image_list=[])
                     action = agent.get_action(state, deterministic=True)
                     next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
                     # next_obs, reward, terminated, truncated, _ = env.step(action)
                     test_reward += reward
+                    # if testepisode == 0:
+                    #     frames.append(env.render())
+                    #     titles.append("Episode "+str(episode+1))
                     if terminated or truncated:
                         break
                     else:
@@ -137,7 +144,9 @@ if __name__ == '__main__':
     
     agent.eval()
     obs, _ = env.reset()
-    for step in range(nsteps):
+    frames = [env.render()]
+    titles= ["Step "+str(0)]
+    for step in range(10):
         state = obs2state(obs, env.observation_space, image_list=[])
         action = agent.get_action(state, deterministic=True)
         next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
@@ -149,8 +158,9 @@ if __name__ == '__main__':
         frames.append(env.render())
         titles.append("Step "+str(step+1))
     
-    anim(frames, titles=titles, filename="out/test_only-rl_1deg-action.mp4")
+    anim(frames, titles=titles, filename="out/test_only-rl_1deg-action.mp4", show=False)
     agent.save("model/test_only-rl_1deg-action.pth")
     
     env.close()
+    writer.flush()
     writer.close()

@@ -160,4 +160,5 @@ if __name__ == '__main__':
     agent.save("model/test_1deg-action.pth")
     
     env.close()
+    writer.flush()
     writer.close()
