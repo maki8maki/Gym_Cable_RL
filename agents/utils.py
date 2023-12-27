@@ -103,7 +103,7 @@ class ReplayBuffer:
 
 class RL:
     def __init__(self):
-        pass
+        self.info = {}
     
     def batch_to_tensor(self, batch, key_list=['states', 'actions', 'next_states', 'rewards', 'dones']):
         return_list = []

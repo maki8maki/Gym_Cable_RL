@@ -82,6 +82,7 @@ class MLPActorCritic(nn.Module):
 class SAC(RL):
     def __init__(self, observation_space, action_space, ac_kwargs=dict(), gamma=0.99, polyak=0.995,
                  lr=1e-3, alpha=0.2, batch_size=32, device="cpu"):
+        super().__init__()
         self.ac = MLPActorCritic(observation_space, action_space, device=device, **ac_kwargs).to(device)
         self.ac_targ = copy.deepcopy(self.ac)
         self.q_params = itertools.chain(self.ac.q1.parameters(), self.ac.q2.parameters())
@@ -137,20 +138,24 @@ class SAC(RL):
         loss_q = self.compute_loss_q(tensors)
         loss_q.backward()
         self.q_opt.step()
+        self.info['loss_q'] = loss_q.to('cpu').detach().numpy().copy().mean()
         
         for p in self.q_params:
             p.requires_grad = False
         
         self.pi_opt.zero_grad()
-        loss_pi, _ = self.compute_loss_pi(states)
+        loss_pi, logp_pi = self.compute_loss_pi(states)
         loss_pi.backward()
         self.pi_opt.step()
+        self.info['loss_pi'] = loss_pi.to('cpu').detach().numpy().copy().mean()
+        self.info['logp_pi'] = logp_pi.to('cpu').detach().numpy().copy().mean()
         
-        alpha_loss = self.compute_loss_alpha(states)
+        loss_alpha = self.compute_loss_alpha(states)
         self.alpha_optim.zero_grad()
-        alpha_loss.backward()
+        loss_alpha.backward()
         self.alpha_optim.step()
         self.alpha = self.log_alpha.exp()
+        self.info['loss_alpha'] = loss_alpha.to('cpu').detach().numpy().copy().mean()
         
         for p in self.q_params:
             p.requires_grad = True
