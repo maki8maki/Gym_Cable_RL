@@ -39,7 +39,7 @@ if __name__ == '__main__':
     
     gym_cable.register_robotics_envs()
     env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps)
-    action_space = spaces.Box(-1.0, 1.0, shape=(1,), dtype="float32")
+    action_space = spaces.Box(-1.0, 1.0, shape=(3,), dtype="float32")
     config = {
         "observation_space": env.observation_space["observation"],
         "action_space": action_space,
@@ -56,8 +56,7 @@ if __name__ == '__main__':
     writer = SummaryWriter(log_dir='./logs/SAC/'+now.strftime('%Y%m%d-%H%M'))
 
     obs, _ = env.reset(seed=seed)
-    # frames = [env.render()]
-    ac = np.zeros((5,))
+    ac = np.zeros((3,))
     for _ in tqdm(range(memory_size)):
         action = action_space.sample()
         next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
@@ -66,15 +65,11 @@ if __name__ == '__main__':
         next_state = obs2state(next_obs, env.observation_space, image_list=[])
         transition = return_transition(state, next_state, reward, action, terminated, truncated)
         replay_buffer.append(transition)
-        # frames.append(env.render())
         if terminated or truncated:
             obs, info = env.reset()
         else:
             obs = next_obs
 
-    episode_rewards = []
-    test_episodes = []
-    test_rewards = []
     frames = []
     titles = []
     update_every = 50
@@ -82,9 +77,6 @@ if __name__ == '__main__':
     for episode in tqdm(range(nepisodes)):
         obs, _ = env.reset()
         episode_reward = 0
-        # if (episode+1) % 100 == 0:
-        #     frames.append(env.render())
-        #     titles.append("Episode "+str(episode+1))
         for step in range(nsteps):
             state = obs2state(obs, env.observation_space, image_list=[])
             action = agent.get_action(state)
@@ -95,24 +87,23 @@ if __name__ == '__main__':
             replay_buffer.append(transition)
             episode_reward += reward
             if update_count % update_every == 0:
-                for _ in range(update_every):
+                for upc in range(update_every):
                     batch = replay_buffer.sample(agent.batch_size)
                     agent.update_from_batch(batch)
+                    num = update_count - (update_every - upc)
+                    for key in agent.info.keys():
+                        writer.add_scalar('train/'+key, agent.info[key], num)
             update_count += 1
-            # if (episode+1) % 100 == 0:
-            #     frames.append(env.render())
-            #     titles.append("Episode "+str(episode+1))
             if terminated or truncated:
                 break
             else:
                 obs = next_obs
-        episode_rewards.append(episode_reward)
         writer.add_scalar('train/reward', episode_reward, episode+1)
         writer.add_scalar('train/step', step, episode+1)
         if (episode+1) % (nepisodes/10) == 0:
             tqdm.write("Episode %d finished when step %d | Episode reward %f" % (episode+1, step+1, episode_reward))
         if (episode+1) % (nepisodes/50) == 0:
-        # if (episode+1) % 10 == 0:
+        # if (episode+1) % 50 == 0:
             # Test
             agent.eval()
             test_reward = 0
@@ -136,12 +127,11 @@ if __name__ == '__main__':
                     else:
                         obs = next_obs
                 steps += step
-            test_episodes.append(episode)
-            test_rewards.append(test_reward/ntestepisodes)
             writer.add_scalar('test/reward', test_reward/ntestepisodes, episode+1)
             writer.add_scalar('test/step', steps/ntestepisodes, episode+1)
             agent.train()
-    
+    # anim(frames, titles=titles, filename="out/test_only-rl_xy-action1.mp4", show=False)
+
     agent.eval()
     obs, _ = env.reset()
     frames = [env.render()]
@@ -151,15 +141,15 @@ if __name__ == '__main__':
         action = agent.get_action(state, deterministic=True)
         next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
         # next_obs, reward, terminated, truncated, _ = env.step(action)
+        frames.append(env.render())
+        titles.append("Step "+str(step+1))
         if terminated or truncated:
             break
         else:
             obs = next_obs
-        frames.append(env.render())
-        titles.append("Step "+str(step+1))
     
-    anim(frames, titles=titles, filename="out/test_only-rl_1deg-action.mp4", show=False)
-    agent.save("model/test_only-rl_1deg-action.pth")
+    anim(frames, titles=titles, filename="out/test_only-rl_xyz-action2.mp4", show=False)
+    agent.save("model/test_only-rl_xyz-action.pth")
     
     env.close()
     writer.flush()
