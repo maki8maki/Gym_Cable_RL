@@ -22,7 +22,7 @@ class Comb:
     
     def get_action(self, state, deterministic=False):
         image_tensor = F.to_tensor(state['image']).to(self.device)
-        h = self.fe.forward(image_tensor).squeeze().detach() * 2.0 - 1.0
+        h = self.fe.forward(image_tensor).squeeze().detach()
         obs_tensor = torch.tensor(state['observation'], dtype=torch.float, device=self.device)
         _state = torch.cat((h, obs_tensor))
         return self.rl.get_action(_state, deterministic)
