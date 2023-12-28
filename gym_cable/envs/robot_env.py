@@ -282,6 +282,8 @@ class MujocoRobotEnv(BaseRobotEnv):
         self.initial_time = self.data.time
         self.initial_qpos = np.copy(self.data.qpos)
         self.initial_qvel = np.copy(self.data.qvel)
+        self.initial_circuit_pos = self._utils.get_joint_qpos(self.model, self.data, "circuit:joint")
+        self.initial_cable_pos = np.copy(self.model.body("B_first").pos)
         
         self.mujoco_renderer = MujocoRenderer(self.model, self.data, self.default_camera_config)
 

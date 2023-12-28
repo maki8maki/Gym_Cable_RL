@@ -23,7 +23,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             self,
             target_offset,
             obj_range,
-            target_range,
+            is_random,
             distance_threshold,
             rotation_threshold,
             rot_weight,
@@ -36,14 +36,13 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
                 n_substeps (int): number of substeps the simulation runs on every call to step
                 target_offset (float or array with 3 elements): offset of the target
                 obj_range (float): range of a uniform distribution for sampling initial object positions
-                target_range (float): range of a uniform distribution for sampling a target
                 distance_threshold (float): the threshold after which a goal is considered achieved
                 initial_qpos (dict): a dictionary of joint names and values that define the initial configuration
             """
 
             self.target_offset = target_offset
             self.obj_range = obj_range
-            self.target_range = target_range
+            self.is_random = is_random
             self.distance_threshold = distance_threshold
             self.rotation_threshold = rotation_threshold
             self.rot_weight = rot_weight
@@ -153,6 +152,25 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
 
     def _render_callback(self):
         self._mujoco.mj_forward(self.model, self.data)
+        
+    def _reset_sim(self):
+        self.data.time = self.initial_time
+        self.data.qpos[:] = np.copy(self.initial_qpos)
+        self.data.qvel[:] = np.copy(self.initial_qvel)
+        if self.model.na != 0:
+            self.data.act[:] = None
+
+        # Randomize start position of object.
+        if self.is_random:
+            diff = self.np_random.uniform(-self.obj_range, self.obj_range)
+            circuit_pos = np.copy(self.initial_circuit_pos)
+            circuit_pos[1] += diff
+            self._utils.set_joint_qpos(self.model, self.data, "circuit:joint", circuit_pos)
+            self.model.body("B_first").pos = np.copy(self.initial_cable_pos)
+            self.model.body("B_first").pos[1] += diff
+
+        self._mujoco.mj_forward(self.model, self.data)
+        return True
 
     def _env_setup(self, initial_qpos):
         for name, value in initial_qpos.items():
