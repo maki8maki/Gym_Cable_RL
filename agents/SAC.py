@@ -28,6 +28,7 @@ class SquashedGaussianMLPActor(nn.Module):
         mu = torch.nan_to_num(mu) # まれにNaNになるのでreplaceする
         log_std = self.log_std_layer(net_out)
         log_std = torch.clamp(log_std, LOG_STD_MIN, LOG_STD_MAX)
+        log_std = torch.nan_to_num(log_std) # 同上
         std = torch.exp(log_std)
         
         # Pre-squash distribution and sample
