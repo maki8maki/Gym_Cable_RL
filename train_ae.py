@@ -38,7 +38,7 @@ if __name__ == '__main__':
         logging.warning("You are using CPU!!")
     
     gym_cable.register_robotics_envs()
-    env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps)
+    env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps, is_random=True)
     config = {
         "image_size": (img_height, img_width, 4),
         "hidden_dim": data["hidden_dim"],
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     writer = SummaryWriter(log_dir='./logs/DCAE/'+now.strftime('%Y%m%d-%H%M'))
     
     gathering_data = True
-    data_path = './data/grasp_rgbd_without-init.npy'
+    data_path = './data/grasp_r_rgbd_w-init.npy'
     if gathering_data:
         memory_size = 10000
         imgs = []
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     
     batch_size = 128
     nepochs = 500
-    model_path = "model/DCAE_gelu_ssim.pth"
+    model_path = "model/DCAE_r_gelu_ssim_w-init.pth"
     early_stopping = EarlyStopping(verbose=True, patience=100, path=model_path, trace_func=tqdm.write)
     
     train_imgs, test_imgs = torch.utils.data.random_split(imgs, [0.7, 0.3])
@@ -132,4 +132,5 @@ if __name__ == '__main__':
     torch.save(model.state_dict(), os.path.join(pwd, model_path))
 
     env.close()
+    writer.flush()
     writer.close()
