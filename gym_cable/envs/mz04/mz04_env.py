@@ -176,3 +176,9 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         for name, value in initial_qpos.items():
             self._utils.set_joint_qpos(self.model, self.data, name, value)
         self._mujoco.mj_forward(self.model, self.data)
+    
+    def set_threshold(self, distance_threshold=None, rotation_threshold=None):
+        if distance_threshold is not None:
+            self.distance_threshold = distance_threshold
+        if rotation_threshold is not None:
+            self.rotation_threshold = rotation_threshold
