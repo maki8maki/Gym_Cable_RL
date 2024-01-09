@@ -1,16 +1,17 @@
 import matplotlib.pyplot as plt
-import torch
-import cv2
-import os
-import json
-import numpy as np
-from absl import logging
-from gymnasium import spaces
 import gymnasium as gym
+import torch
+import torch.nn as nn
+import cv2
+import json
+import os
+from absl import logging
+
 import gym_cable
 
-from utils import set_seed, anim, obs2state
-from agents.comb import DCAE_SAC
+from agents.DCAE import DCAE
+from agents.utils import SSIMLoss
+from utils import set_seed, obs2state
 
 if __name__ == '__main__':
     seed = 42
@@ -19,12 +20,9 @@ if __name__ == '__main__':
     pwd = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(pwd, "params.json"), "r") as f:
         data = json.load(f)
-    nepisodes = data["nepisodes"]
     nsteps = data["nsteps"]
-    memory_size = data["memory_size"]
     img_width = data["img_width"]
     img_height = data["img_height"]
-    ntestepisodes = data["ntestepisodes"]
     
     if torch.cuda.is_available():
         device = "cuda"
@@ -33,51 +31,46 @@ if __name__ == '__main__':
         logging.warning("You are using CPU!!")
     
     gym_cable.register_robotics_envs()
-    env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nepisodes)
-    action_space = spaces.Box(-1.0, 1.0, shape=(1,), dtype="float32")
+    env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps, is_random=False)
     config = {
         "image_size": (img_height, img_width, 4),
         "hidden_dim": data["hidden_dim"],
-        "observation_space": env.observation_space["observation"],
-        "action_space": action_space,
-        "memory_size": memory_size,
-        "fe_kwargs": {
-            "lr": data["lr"],
-        },
-        "rl_kwargs": {
-            "gamma": data["gamma"],
-            "batch_size": data["batch_size"],
-            "lr": data["lr"],
-        },
-        "device": device
+        "lr": data["lr"],
+        "net_activation": nn.GELU(),
+        "loss_func": SSIMLoss(channel=4),
     }
     
-    agent = DCAE_SAC(config)
-    model_path = os.path.join(pwd, "model", "test_1deg-action.pth")
-    agent.load(model_path)
-    trans = lambda img: cv2.resize(img, (img_width, img_height))
-
-    frames = []
-    titles = []
+    model = DCAE(**config).to(device)
+    trans = lambda img: cv2.resize(img, (img_width, img_height)).transpose(2, 0, 1) * 0.5 + 0.5
     
-    ac = np.zeros((5,))
-    agent.eval()
+    batch_size = 128
+    nepochs = 500
+    model_path = "model/DCAE_gelu_ssim_w-init.pth"
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+    
     obs, _ = env.reset()
-    terminated, truncated = False, False
-    actions = []
-    for step in range(100):
-        state = obs2state(obs, env.observation_space, trans)
-        action = agent.get_action(state, deterministic=True)
-        actions.append(action)
-        next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
-        if terminated or truncated:
-            break
-        frames.append(env.render())
-        titles.append("Step "+str(step+1))
-    
-    plt.plot(actions)
+    state = obs2state(obs, env.observation_space, trans)
+    x = torch.tensor(state["image"]).to(device)
+    _, y = model.forward(x, return_pred=True)
+    x = x.cpu().squeeze().detach().numpy().transpose(1, 2, 0)
+    y = y.cpu().squeeze().detach().numpy().transpose(1, 2, 0)
+
+    plt.axis("off")    
+    plt.imshow(x[..., :3])
     plt.show()
     
-    anim(frames, titles=titles)
+    plt.axis("off")
+    plt.imshow(x[..., 3:], cmap='gray')
+    plt.show()
     
+    plt.axis("off")
+    plt.imshow(y[..., :3])
+    plt.show()
+    
+    plt.axis("off")
+    plt.imshow(y[..., 3:], cmap='gray')
+    plt.show()
+    
+
     env.close()
