@@ -142,10 +142,10 @@ if __name__ == '__main__':
             agent.eval()
             test_reward = 0
             steps = 0
-            success_num = 0
             for testepisode in range(ntestepisodes):
                 obs, _ = env.reset(options=options)
-                if testepisode == 0 and (episode+1) % (nepisodes/10) == 0:
+                save_frames = (testepisode == 0) and ((episode+1) % (nepisodes/10) == 0)
+                if save_frames:
                     frames.append(env.render())
                     titles.append("Episode "+str(episode+1))
                 for step in range(nsteps):
@@ -154,12 +154,10 @@ if __name__ == '__main__':
                     next_obs, reward, terminated, truncated, _ = env.step(np.concatenate([action, ac]))
                     # next_obs, reward, terminated, truncated, _ = env.step(action)
                     test_reward += reward
-                    if testepisode == 0 and (episode+1) % (nepisodes/10) == 0:
+                    if save_frames:
                         frames.append(env.render())
                         titles.append("Episode "+str(episode+1))
                     if terminated or truncated:
-                        if terminated:
-                            success_num += 1
                         break
                     else:
                         obs = next_obs
@@ -189,7 +187,7 @@ if __name__ == '__main__':
             obs = next_obs
     
     anim(frames, titles=titles, filename="out/test_rl_cl2_w-trainedAE_xyz-2.mp4", show=False)
-    agent.save("model/test_rl_Cl2_w-trainedAE_xyz.pth")
+    agent.save("model/test_rl_cl2_w-trainedAE_xyz.pth")
     
     writer.add_hparams(hparam_dict=data, metric_dict={'reward': episode_reward}, run_name='hparams')
     
