@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Optional
 
 from gym_cable.envs.robot_env import MujocoRobotEnv
 from gym_cable.utils import rotations
@@ -53,14 +54,39 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
         # ----------------------------
 
         def compute_reward(self, obs, goal, info):
-            position_err, posture_err = self._utils.calc_err_norm(obs, goal)
-            err_norm = position_err + posture_err * self.rot_weight
-            reward = -err_norm
             if self.terminated:
-                reward += 10
+                reward = 10
             elif self.truncated:
-                reward += -10
+                reward = -10
+            else:
+                position_err, posture_err = self._utils.calc_err_norm(obs, goal)
+                err_norm = position_err # + posture_err * self.rot_weight
+                reward = -err_norm
             return reward
+        
+        def reset(
+            self,
+            *,
+            seed: Optional[int] = None,
+            options: Optional[dict] = None,
+        ):
+            obs, info = super().reset(seed=seed)
+            if options is not None:
+                try:
+                    r = 1 - options["diff_ratio"]
+                    assert(0 <= r and r <= 1)
+                    pos_c, quat_c = obs['observation'][:3], rotations.euler2quat(obs['observation'][3:])
+                    pos_g, quat_g = self.goal[:3], rotations.euler2quat(self.goal[3:])
+                    pos_t = (1 - r) * pos_c + r * pos_g
+                    quat_t = rotations.quat_slerp(quat_c, quat_g, r)
+                    _ = self._utils.set_site_to_xpos(self.model, self.data, self.site_name, self.joint_names, pos_t, quat_t)
+                except Exception as e:
+                    print(e)
+            obs = self._get_obs()
+            if self.render_mode == "human":
+                self.render()
+
+            return obs, info
 
         # RobotEnv methods
         # ----------------------------
