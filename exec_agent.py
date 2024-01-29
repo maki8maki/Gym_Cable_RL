@@ -40,10 +40,10 @@ if __name__ == '__main__':
     env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps, is_random=False)
     hidden_low = np.full(hidden_dim, -1.0)
     hidden_high = np.full(hidden_dim, 1.0)
-    # obs_space_low = np.concatenate([hidden_low, env.observation_space["observation"].low[:3]])
-    # obs_space_high = np.concatenate([hidden_high, env.observation_space["observation"].high[:3]])
-    obs_space_low = np.concatenate([hidden_low, env.observation_space["observation"].low])
-    obs_space_high = np.concatenate([hidden_high, env.observation_space["observation"].high])
+    obs_space_low = np.concatenate([hidden_low, env.observation_space["observation"].low[:3]])
+    obs_space_high = np.concatenate([hidden_high, env.observation_space["observation"].high[:3]])
+    # obs_space_low = np.concatenate([hidden_low, env.observation_space["observation"].low])
+    # obs_space_high = np.concatenate([hidden_high, env.observation_space["observation"].high])
     observation_space = spaces.Box(low=obs_space_low, high=obs_space_high, dtype=np.float64)
     action_space = spaces.Box(-1.0, 1.0, shape=(3,), dtype="float32")
     rl_config = {
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     }
     
     agent = SAC(**rl_config)
-    agent.load("./model/test_rl_w-trainedAE_xyz-action.pth")
+    agent.load("./model/SAC_w-trainedDCAE_xyz_cl2.pth")
     agent.eval()
     
     ae_config = {
@@ -91,9 +91,7 @@ if __name__ == '__main__':
             break
         else:
             obs = next_obs
-    print(obs['observation'])
-    print(next_obs['observation'])
-    print(truncated)
-    # anim(frames, titles=titles, filename="out/rl_w-trainedAE_xyz.mp4", show=False)
+    print(terminated)
+    anim(frames, titles=titles)
     
     env.close()

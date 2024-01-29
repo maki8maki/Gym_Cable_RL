@@ -80,8 +80,10 @@ if __name__ == '__main__':
     obs, _ = env.reset(seed=seed, options=options)
     ac = np.zeros((3,))
     
-    gathering_data = False
-    data_path = f'./data/buffer_cl2_o-3_w-hs_{action_space.shape[0]}_{memory_size}.pcl'
+    basename = "SAC_trainedDCAE_xyz_cl2"
+    
+    gathering_data = True
+    data_path = f'./data/buffer_{basename}_o-3_w-hs_{action_space.shape[0]}_{memory_size}.pcl'
     if gathering_data:
         for _ in tqdm(range(memory_size)):
             action = action_space.sample()
@@ -102,7 +104,7 @@ if __name__ == '__main__':
             replay_buffer = pickle.load(f)
     
     now = datetime.now()
-    writer = SummaryWriter(log_dir='./logs/SAC_w-TrainedDCAE/'+now.strftime('%Y%m%d-%H%M'))
+    writer = SummaryWriter(log_dir=f'./logs/{basename}/'+now.strftime('%Y%m%d-%H%M'))
 
     frames = []
     titles = []
@@ -112,6 +114,7 @@ if __name__ == '__main__':
     for episode in tqdm(range(nepisodes)):
         if (episode+1) % (nepisodes/10) == 0:
             options['diff_ratio'] = np.clip(options['diff_ratio']+0.1, 0.0, 1.0)
+            tqdm.write(f'Episode: {episode+1} | ratio is {options["diff_ratio"]}')
         obs, _ = env.reset(options=options)
         episode_reward = 0
         for step in range(nsteps):
@@ -141,7 +144,7 @@ if __name__ == '__main__':
             # Test
             agent.eval()
             test_reward = 0
-            steps = 0
+            steps = 0.0
             for testepisode in range(ntestepisodes):
                 obs, _ = env.reset(options=options)
                 save_frames = (testepisode == 0) and ((episode+1) % (nepisodes/10) == 0)
@@ -161,11 +164,11 @@ if __name__ == '__main__':
                         break
                     else:
                         obs = next_obs
-                steps += step
+                steps += step + 1.0
             writer.add_scalar('test/reward', test_reward/ntestepisodes, episode+1)
             writer.add_scalar('test/step', steps/ntestepisodes, episode+1)
             agent.train()
-    anim(frames, titles=titles, filename="out/test_rl_cl2_w-trainedAE_xyz-1.mp4", show=False)
+    anim(frames, titles=titles, filename=f'out/{basename}-1.mp4', show=False)
 
     agent.eval()
     env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps, is_random=False)
@@ -186,8 +189,8 @@ if __name__ == '__main__':
         else:
             obs = next_obs
     
-    anim(frames, titles=titles, filename="out/test_rl_cl2_w-trainedAE_xyz-2.mp4", show=False)
-    agent.save("model/test_rl_cl2_w-trainedAE_xyz.pth")
+    anim(frames, titles=titles, filename=f'out/{basename}-2.mp4', show=False)
+    agent.save(f'model/{basename}.pth')
     
     writer.add_hparams(hparam_dict=data, metric_dict={'reward': episode_reward}, run_name='hparams')
     
