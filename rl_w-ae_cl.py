@@ -47,7 +47,7 @@ if __name__ == '__main__':
         logging.warning("You are using CPU!!")
     
     gym_cable.register_robotics_envs()
-    env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps, is_random=True)
+    env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps, is_random=False)
     hidden_low = np.full(hidden_dim, -1.0)
     hidden_high = np.full(hidden_dim, 1.0)
     obs_space_low = np.concatenate([hidden_low, env.observation_space["observation"].low[:3]])
@@ -75,15 +75,17 @@ if __name__ == '__main__':
     }
     
     model = DCAE(**ae_config).to(device)
-    model.load_state_dict(torch.load('./model/DCAE_r_gelu_ssim_w-init.pth', map_location=device))
+    model.load_state_dict(torch.load('./model/DCAE_gelu_ssim_w-init.pth', map_location=device))
     model.eval()
     trans = lambda img: cv2.resize(img, (img_width, img_height)).transpose(2, 0, 1) * 0.5 + 0.5
 
     obs, _ = env.reset(seed=seed)
     ac = np.zeros((3,))
     
+    env.unwrapped.set_threshold(distance_threshold=distance_threshold)
+    
     gathering_data = False
-    data_path = f'./data/buffer_r_o-3_w-hs_{action_space.shape[0]}_{memory_size}.pcl'
+    data_path = f'./data/buffer_cl_o-3_w-hs_{action_space.shape[0]}_{memory_size}.pcl'
     if gathering_data:
         for _ in tqdm(range(memory_size)):
             action = action_space.sample()
@@ -106,14 +108,11 @@ if __name__ == '__main__':
     now = datetime.now()
     writer = SummaryWriter(log_dir='./logs/SAC_w-TrainedDCAE/'+now.strftime('%Y%m%d-%H%M'))
 
-    env.unwrapped.set_threshold(distance_threshold=distance_threshold)
-
     frames = []
     titles = []
     update_every = 50
     update_count = 1
-    success_num = 0
-    fail_num = 0
+    achive_num = 0
     for episode in tqdm(range(nepisodes)):
         obs, _ = env.reset()
         episode_reward = 0
@@ -135,33 +134,17 @@ if __name__ == '__main__':
                         writer.add_scalar('train/'+key, agent.info[key], num)
             update_count += 1
             if terminated or truncated:
-                if terminated:
-                    success_num += 1
-                else:
-                    fail_num += 1
                 break
             else:
                 obs = next_obs
-        if (success_num+fail_num) >= min_episode and success_num/(success_num+fail_num) >= change_rate:
-            distance_threshold -= 0.005
-            distance_threshold = max(distance_threshold, 0.001)
-            env.unwrapped.set_threshold(distance_threshold=distance_threshold)
-            success_num = 0
-            fail_num = 0
-            tqdm.write(f'Episode: {episode+1} | distance threshold is {distance_threshold}')
-        elif (success_num+fail_num) >= 500:
-            success_num = 0
-            fail_num = 0
-            tqdm.write(f'Episode: {episode+1} | count reset')
         writer.add_scalar('train/reward', episode_reward, episode+1)
         writer.add_scalar('train/step', step, episode+1)
-        if (episode+1) % (nepisodes/10) == 0:
-            tqdm.write("Episode %d finished when step %d | Episode reward %f" % (episode+1, step+1, episode_reward))
         if (episode+1) % (nepisodes/100) == 0:
             # Test
             agent.eval()
             test_reward = 0
             steps = 0
+            success_num = 0
             for testepisode in range(ntestepisodes):
                 obs, _ = env.reset()
                 if testepisode == 0 and (episode+1) % (nepisodes/10) == 0:
@@ -177,6 +160,8 @@ if __name__ == '__main__':
                         frames.append(env.render())
                         titles.append("Episode "+str(episode+1))
                     if terminated or truncated:
+                        if terminated:
+                            success_num += 1
                         break
                     else:
                         obs = next_obs
@@ -184,10 +169,18 @@ if __name__ == '__main__':
             writer.add_scalar('test/reward', test_reward/ntestepisodes, episode+1)
             writer.add_scalar('test/step', steps/ntestepisodes, episode+1)
             agent.train()
-    anim(frames, titles=titles, filename="out/test_rl_r_cl_w-trainedAE_xyz-1.mp4", show=False)
+            if success_num/ntestepisodes >= change_rate:
+                achive_num += 1
+            if achive_num >= 3:
+                achive_num = 0
+                distance_threshold -= 0.005
+                distance_threshold = max(distance_threshold, 0.005)
+                env.unwrapped.set_threshold(distance_threshold=distance_threshold)
+                tqdm.write(f'Episode: {episode+1} | distance threshold is {distance_threshold}')
+    anim(frames, titles=titles, filename="out/test_rl_cl_w-trainedAE_xyz-1.mp4", show=False)
 
     agent.eval()
-    env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps, is_random=True)
+    env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps, is_random=False)
     obs, _ = env.reset(seed=seed)
     frames = [env.render()]
     titles= ["Step "+str(0)]
@@ -203,8 +196,8 @@ if __name__ == '__main__':
         else:
             obs = next_obs
     
-    anim(frames, titles=titles, filename="out/test_rl_r_cl_w-trainedAE_xyz-2.mp4", show=False)
-    agent.save("model/test_rl_r_Cl_w-trainedAE_xyz.pth")
+    anim(frames, titles=titles, filename="out/test_rl_cl_w-trainedAE_xyz-2.mp4", show=False)
+    agent.save("model/test_rl_Cl_w-trainedAE_xyz.pth")
     
     env.close()
     writer.flush()
