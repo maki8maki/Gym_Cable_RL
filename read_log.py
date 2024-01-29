@@ -23,19 +23,21 @@ def plot(log_dir, tagname=None, title=None, xlabel=None, ylabel=None):
                 value.append(scalar.value)
             x = np.array(step)
             y = np.array(value)
+            plt.figure(figsize=(7, 5.6))
             plt.plot(x, y)
+            plt.tick_params(labelsize=15)
             if title is not None:
                 plt.title(title)
             else:
                 plt.title(tag)
             if xlabel is not None:
-                plt.xlabel(xlabel)
+                plt.xlabel(xlabel, fontsize=18)
             if ylabel is not None:
-                plt.ylabel(ylabel)
+                plt.ylabel(ylabel, fontsize=18)
             plt.show()
 
 if __name__ == '__main__':
-    log_dir = 'logs/SAC/20231220-2054_only-rl_x-action'
-    tagname = 'train/reward'
-    plot(log_dir, tagname, 'Episode Rewards', 'episode', 'rewards')
+    log_dir = 'logs/SAC_w-TrainedDCAE/20231227-1913_xyz'
+    tagname = 'test/reward'
+    plot(log_dir, tagname, title='', xlabel='episode', ylabel='rewards')
             
