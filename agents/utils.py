@@ -4,6 +4,7 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
+import cv2
 
 def size_after_conv(h, ksize, stride=1, padding=0):
     return ((h - ksize + 2 * padding) // stride) + 1
@@ -84,9 +85,19 @@ class SSIMLoss(nn.Module):
         kernel_2d = kernel_2d.expand(channel, 1, kernel_size, kernel_size).contiguous()
         return kernel_2d
 
-class ReplayBuffer:
+class Buffer:
     def __init__(self, memory_size):
         self.memory_size = memory_size
+    
+    def append(self, transition):
+        raise NotImplementedError
+    
+    def sample(self, batch_size):
+        raise NotImplementedError
+
+class ReplayBuffer(Buffer):
+    def __init__(self, memory_size):
+        super().__init__(memory_size)
         self.memory = deque([], maxlen = memory_size)
 
     def append(self, transition):
@@ -104,6 +115,7 @@ class ReplayBuffer:
 class RL:
     def __init__(self):
         self.info = {}
+        self.device = 'cpu'
     
     def batch_to_tensor(self, batch, key_list=['states', 'actions', 'next_states', 'rewards', 'dones']):
         return_list = []
@@ -143,3 +155,15 @@ class RL:
     
     def train(self):
         raise NotImplementedError()
+
+class MyTrans(nn.Module):
+    def __init__(self, img_width, img_height):
+        super().__init__()
+        self.img_width = img_width
+        self.img_height = img_height
+    
+    def __call__(self, img):
+        """
+        resize, shapeの変更, [-1, 1]を[0, 1]に変換
+        """
+        return cv2.resize(img, (self.img_width, self.img_height)).transpose(2, 0, 1) * 0.5 + 0.5
