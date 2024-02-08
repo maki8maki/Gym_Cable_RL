@@ -34,10 +34,10 @@ def plot(log_dir, tagname=None, title=None, xlabel=None, ylabel=None):
                 plt.xlabel(xlabel, fontsize=18)
             if ylabel is not None:
                 plt.ylabel(ylabel, fontsize=18)
+            plt.tight_layout()
             plt.show()
 
 if __name__ == '__main__':
     log_dir = 'logs/SAC_w-TrainedDCAE/20231227-1913_xyz'
     tagname = 'test/reward'
     plot(log_dir, tagname, title='', xlabel='episode', ylabel='rewards')
-            
