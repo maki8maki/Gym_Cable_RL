@@ -1,0 +1,5 @@
+gamma: 0.7
+batch_size: 50
+lr: 1e-3
+obs_dim: 6
+act_dim: 6
