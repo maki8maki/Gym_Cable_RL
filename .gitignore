@@ -8,16 +8,13 @@
 # for mujoco error file
 MUJOCO_LOG.TXT
 
-# for RL params
-params.json
+# for params
+conf/*.yaml
+!conf/*defaults.yaml
 model/*
 !model/.gitkeep
 
-# for output(video, image, graph...)
-out/*
-!out/.gitkeep
-
-# for tensorboard log
+# for log
 logs/*
 
 # for gathered data
