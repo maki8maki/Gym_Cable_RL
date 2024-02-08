@@ -15,14 +15,14 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
 
 def anim(frames, titles=None, filename=None, show=True):
-    plt.figure(figsize=(frames[0].shape[1]/72.0/4, frames[0].shape[0]/72.0/4), dpi=72)
+    plt.figure(figsize=(frames[0].shape[1]/72.0, frames[0].shape[0]/72.0), dpi=144)
     patch = plt.imshow(frames[0])
     plt.axis('off')
 
     def animate(i):
         patch.set_data(frames[i])
         if titles is not None:
-            plt.title(titles[i])
+            plt.title(titles[i], fontsize=32)
 
     anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=50)
     if filename is not None:
@@ -55,14 +55,14 @@ def obs2state(obs, observation_space, trans=None, image_list=['rgb_image', 'dept
     else:
         return normalized_obs['observation']
 
-def obs2state_through_fe(obs, observation_space, model, trans, image_list=['rgb_image', 'depth_image'], device='cpu'):
+def obs2state_through_fe(obs, observation_space, model, trans, image_list=['rgb_image', 'depth_image'], device='cpu', obs_dim=6):
     normalized_obs = normalize_state(obs, observation_space)
     image = normalized_obs[image_list[0]]
     for name in image_list[1:]:
         image = np.concatenate([image, normalized_obs[name]], axis=2)
     image = torch.tensor(trans(image), dtype=torch.float, device=device)
     hs = model.forward(image).cpu().squeeze().detach().numpy()
-    state = np.concatenate([hs, normalized_obs['observation']])
+    state = np.concatenate([hs, normalized_obs['observation'][:obs_dim]])
     return state
 
 def return_transition(state, next_state, reward, action, terminated, truncated):
@@ -71,6 +71,7 @@ def return_transition(state, next_state, reward, action, terminated, truncated):
         'next_state': next_state,
         'reward': reward,
         'action': action,
+        'success': terminated,
         'done': int(terminated or truncated) # エピソードの終了（成功、失敗）
     }
 
@@ -82,6 +83,9 @@ def yes_no_input(check):
             return True
         elif choice in ['n', 'no']:
             return False
+
+def check_freq(total: int, current: int, num: int):
+    return ((current+1) % (total/num) == 0)
 
 class EarlyStopping:
     def __init__(self, patience=7, verbose=False, delta=0, path='checkpoint.pth', trace_func=print):
