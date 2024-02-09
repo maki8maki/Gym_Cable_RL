@@ -14,13 +14,11 @@ LOG_STD_MAX = 2
 LOG_STD_MIN = -20
 
 class SquashedGaussianMLPActor(nn.Module):
-    def __init__(self, observation_space, action_space, hidden_sizes, activation, device='cpu'):
+    def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
         super().__init__()
-        self.net = mlp([observation_space.shape[0]] + list(hidden_sizes), activation, activation)
-        self.mu_layer = nn.Linear(hidden_sizes[-1], action_space.shape[0])
-        self.log_std_layer = nn.Linear(hidden_sizes[-1], action_space.shape[0])
-        self.action_mean = torch.tensor(0.5*(action_space.high+action_space.low), dtype=torch.float, device=device)
-        self.action_halfwidth = torch.tensor(0.5*(action_space.high-action_space.low), dtype=torch.float, device=device)
+        self.net = mlp([obs_dim] + list(hidden_sizes), activation, activation)
+        self.mu_layer = nn.Linear(hidden_sizes[-1], act_dim)
+        self.log_std_layer = nn.Linear(hidden_sizes[-1], act_dim)
         
     def forward(self, s, deterministic=False, with_logprob=True):
         net_out = self.net(s)
@@ -49,29 +47,24 @@ class SquashedGaussianMLPActor(nn.Module):
             logp_pi -= (2*(np.log(2) - pi_action - F.softplus(-2*pi_action))).sum(axis=1)
         else:
             logp_pi = None
-
-        pi_action = self.action_mean + self.action_halfwidth*torch.tanh(pi_action)
         
         return pi_action, logp_pi
     
 class MLPQFunction(nn.Module):
-    def __init__(self, observation_space, action_space, hidden_sizes, activation, device='cpu'):
+    def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
         super().__init__()
-        self.q = mlp([observation_space.shape[0]+action_space.shape[0]] + list(hidden_sizes) + [1], activation)
-        self.action_mean = torch.tensor(0.5*(action_space.high+action_space.low), dtype=torch.float, device=device)
-        self.action_halfwidth = torch.tensor(0.5*(action_space.high-action_space.low), dtype=torch.float, device=device)
+        self.q = mlp([obs_dim+act_dim] + list(hidden_sizes) + [1], activation)
         
     def forward(self, s, a):
-        _a = (a-self.action_mean) / self.action_halfwidth
-        q = self.q(torch.cat([s, _a], dim=-1))
+        q = self.q(torch.cat([s, a], dim=-1))
         return torch.squeeze(q, -1)
 
 class MLPActorCritic(nn.Module):
-    def __init__(self, observation_space, action_space, hidden_sizes=(256,256), activation=nn.ReLU, device='cpu'):
+    def __init__(self, obs_dim, act_dim, hidden_sizes=(256,256), activation=nn.ReLU):
         super().__init__()
-        self.pi = SquashedGaussianMLPActor(observation_space, action_space, hidden_sizes, activation, device)
-        self.q1 = MLPQFunction(observation_space, action_space, hidden_sizes, activation, device)
-        self.q2 = MLPQFunction(observation_space, action_space, hidden_sizes, activation, device)
+        self.pi = SquashedGaussianMLPActor(obs_dim, act_dim, hidden_sizes, activation)
+        self.q1 = MLPQFunction(obs_dim, act_dim, hidden_sizes, activation)
+        self.q2 = MLPQFunction(obs_dim, act_dim, hidden_sizes, activation)
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.Linear)):
                 nn.init.orthogonal_(m.weight)
@@ -82,10 +75,10 @@ class MLPActorCritic(nn.Module):
             return a.cpu().numpy()
 
 class SAC(RL):
-    def __init__(self, observation_space, action_space, ac_kwargs=dict(), gamma=0.99, polyak=0.995,
+    def __init__(self, obs_dim, act_dim, ac_kwargs=dict(), gamma=0.99, polyak=0.995,
                  lr=1e-3, alpha=0.2, batch_size=32, device="cpu"):
         super().__init__()
-        self.ac = MLPActorCritic(observation_space, action_space, device=device, **ac_kwargs).to(device)
+        self.ac = MLPActorCritic(obs_dim, act_dim, **ac_kwargs).to(device)
         self.ac_targ = copy.deepcopy(self.ac)
         self.q_params = itertools.chain(self.ac.q1.parameters(), self.ac.q2.parameters())
         self.pi_opt = optim.Adam(self.ac.pi.parameters(), lr=lr)
@@ -95,7 +88,7 @@ class SAC(RL):
         self.polyak = polyak
         self.gamma = gamma
         self.alpha = alpha
-        self.target_entropy = -torch.prod(torch.Tensor(action_space.shape[0]).to(device)).item()
+        self.target_entropy = -torch.prod(torch.Tensor(act_dim).to(device)).item()
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
         self.alpha_optim = optim.Adam([self.log_alpha], lr=lr)
         self.batch_size = batch_size
@@ -189,3 +182,9 @@ class SAC(RL):
     
     def train(self):
         self.ac.train()
+    
+    def to(self, device):
+        super().to(device)
+        self.ac.to(device)
+        self.ac_targ.to(device)
+        self.log_alpha = self.log_alpha.to(device)

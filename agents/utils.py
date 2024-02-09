@@ -95,7 +95,14 @@ class Buffer:
     def sample(self, batch_size):
         raise NotImplementedError
 
+    def __repr__(self):
+        main_str = f'{self.__class__.__name__}(memory_size={self.memory_size})'
+        return main_str
+
 class ReplayBuffer(Buffer):
+    '''
+    観測・行動は-1 ~ 1に正規化されているものとして扱う
+    '''
     def __init__(self, memory_size):
         super().__init__(memory_size)
         self.memory = deque([], maxlen = memory_size)
@@ -113,6 +120,8 @@ class ReplayBuffer(Buffer):
         return {'states': states, 'next_states': next_states, 'rewards': rewards, 'actions': actions, 'dones': dones}
 
 class RL:
+    gamma: float
+    batch_size: int
     def __init__(self):
         self.info = {}
         self.device = 'cpu'
@@ -155,6 +164,15 @@ class RL:
     
     def train(self):
         raise NotImplementedError()
+    
+    def to(self, device):
+        self.device = device
+    
+    def _get_name(self):
+        return self.__class__.__name__
+        
+    def __repr__(self) -> str:
+        return self._get_name() +'()'
 
 class MyTrans(nn.Module):
     def __init__(self, img_width, img_height):

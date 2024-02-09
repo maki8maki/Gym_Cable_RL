@@ -1,12 +1,21 @@
-lr: 1e-3
 img_width: 108
 img_height: 72
-img_dim: 4
+img_channel: 4
 hidden_dim: 20
+model_name: DCAE_gelu_ssim_w-init.pth
+_model:
+  _target_: agents.DCAE.DCAE
+  img_width: ${img_width}
+  img_height: ${img_height}
+  img_channel: ${img_channel}
+  hidden_dim: ${hidden_dim}
+  lr: 1e-3
+  net_activation:
+    _target_: torch.nn.GELU
+  loss_func:
+    _target_: agents.utils.SSIMLoss
+    channel: ${img_channel}
 _trans:
   _target_: agents.utils.MyTrans
-_net_activation:
-  _target_: torch.nn.GELU
-_loss_func:
-  _target_: agents.utils.SSIMLoss
-model_name: DCAE_gelu_ssim_w-init.pth
+  img_width: ${img_width}
+  img_height: ${img_height}

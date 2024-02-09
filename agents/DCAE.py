@@ -4,9 +4,8 @@ import torch.optim as optim
 from agents.utils import size_after_conv, size_after_pooling, Reshape
 
 class DCAE(nn.Module):
-    def __init__(self, image_size, hidden_dim, lr=1e-3, net_activation=nn.ReLU(inplace=True), hidden_activation=F.tanh, loss_func=F.mse_loss) -> None:
+    def __init__(self, img_height, img_width, img_channel, hidden_dim, lr=1e-3, net_activation=nn.ReLU(inplace=True), hidden_activation=F.tanh, loss_func=F.mse_loss) -> None:
         super().__init__()
-        img_height, img_width, img_channel = image_size
         channels = [img_channel, 32, 64, 128, 256]
         after_height = img_height
         after_width = img_width
@@ -78,4 +77,7 @@ class DCAE(nn.Module):
         else:
             x_pred = self.decoder(self.net_activation(h))
             return h, x_pred
+    
+    def __repr__(self):
+        return self._get_name() +'()'
     
