@@ -60,7 +60,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
                 reward = -10
             else:
                 position_err, posture_err = self._utils.calc_err_norm(obs, goal)
-                err_norm = position_err # + posture_err * self.rot_weight
+                err_norm = position_err + posture_err * self.rot_weight
                 reward = -err_norm
             return reward
         
