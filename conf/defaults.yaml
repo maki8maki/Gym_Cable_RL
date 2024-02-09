@@ -2,6 +2,10 @@ defaults:
   - fe: defaults
   - rl: defaults
 
+hydra:
+  run:
+    dir: logs/${basename}/${now:%Y%m%d-%H%M}
+
 memory_size: 10000
 nsteps: 100
 nepisodes: 5000
@@ -10,13 +14,12 @@ update_every: 50
 save_anim_num: 10
 eval_num: 100
 device: cuda
+seed: 42
 _replay_buffer:
   _target_: agents.utils.ReplayBuffer
+  memory_size: ${memory_size}
 
-basename: SAC_trainedDCAE_cl2
+basename: SAC_trainedDCAE_cl2_o-${rl.obs_dim}_a-${rl.act_dim}
+output_dir: ${hydra:runtime.output_dir}
 
 gathering_data: True
-
-hydra:
-  run:
-    dir: logs/${basename}/${now:%Y%m%d-%H%M}
