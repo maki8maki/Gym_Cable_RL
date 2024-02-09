@@ -5,5 +5,8 @@ numpy
 torch
 torchvision
 tensorflow
-hydra
+hydra-core
 dacite
+omegaconf
+opencv-python
+tqdm
