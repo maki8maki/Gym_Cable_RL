@@ -10,3 +10,5 @@ dacite
 omegaconf
 opencv-python
 tqdm
+PyOpenGL-accelerate
+torch-tb-profiler
