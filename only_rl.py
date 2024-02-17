@@ -12,7 +12,7 @@ import gym_cable
 
 from utils import set_seed, anim, obs2state, return_transition, yes_no_input
 from agents.SAC import SAC
-from agents.utils import ReplayBuffer
+from agents.buffer import ReplayBuffer
 
 if __name__ == '__main__':
     seed = 42
