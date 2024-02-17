@@ -7,6 +7,7 @@ import hydra
 from omegaconf import OmegaConf
 import dacite
 
+from agents import buffer
 from agents import utils
 from agents.DCAE import DCAE
 from agents.SAC import SAC
@@ -69,7 +70,7 @@ class Config:
     eval_num: int = dataclasses.field(default=100, repr=False)
     device: str = 'cpu'
     seed: dataclasses.InitVar[int] = None
-    replay_buffer: utils.Buffer = dataclasses.field(default=utils.ReplayBuffer(memory_size=memory_size), repr=False)
+    replay_buffer: buffer.Buffer = dataclasses.field(default=buffer.ReplayBuffer(memory_size=memory_size), repr=False)
     gathering_data: bool = False
     buffer_name: str = dataclasses.field(init=False)
     output_dir: str = './logs'

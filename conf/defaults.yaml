@@ -16,7 +16,7 @@ eval_num: 100
 device: cuda
 seed: 42
 _replay_buffer:
-  _target_: agents.utils.ReplayBuffer
+  _target_: agents.buffer.ReplayBuffer
   memory_size: ${memory_size}
 
 basename: SAC_trainedDCAE_cl2_o-${rl.obs_dim}_a-${rl.act_dim}

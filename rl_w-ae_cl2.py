@@ -14,7 +14,7 @@ def main(_cfg: OmegaConf):
     
     cl_scheduler = []
     options = {'diff_ratio': 0.1}
-    eps = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]) * cfg.nepisodes
+    eps = np.array([0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]) * cfg.nepisodes
     for ep in eps:
         cl_scheduler.append([ep, options.copy()])
         options['diff_ratio'] = min(options['diff_ratio']+0.1, 1.0)

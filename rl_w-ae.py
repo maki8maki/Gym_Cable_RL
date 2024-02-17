@@ -16,7 +16,8 @@ import gym_cable
 from utils import set_seed, anim, obs2state_through_fe, return_transition, yes_no_input
 from agents.SAC import SAC
 from agents.DCAE import DCAE
-from agents.utils import ReplayBuffer, SSIMLoss
+from agents.utils import SSIMLoss
+from agents.buffer import ReplayBuffer
 
 if __name__ == '__main__':
     seed = 42

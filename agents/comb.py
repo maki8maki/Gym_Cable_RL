@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchvision.transforms.functional as F
 from gymnasium import spaces
-from agents.utils import ReplayBuffer
+from agents.buffer import ReplayBuffer
 from agents.DCAE import DCAE
 from agents.DDPG import DDPG
 from agents.SAC import SAC
