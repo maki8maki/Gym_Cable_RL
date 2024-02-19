@@ -133,7 +133,7 @@ class RL:
                 state_tensor = state_tensor.to(self.device)
         else:
             state_tensor = torch.tensor(state, dtype=torch.float, device=self.device)
-        raise state_tensor
+        return state_tensor
     
     def save(self, path):
         torch.save(self.state_dict(), path)
