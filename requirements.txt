@@ -13,3 +13,4 @@ tqdm
 scipy
 PyOpenGL-accelerate
 torch-tb-profiler
+dill

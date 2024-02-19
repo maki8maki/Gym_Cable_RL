@@ -1,4 +1,4 @@
-import numpy as np
+import random
 import scipy
 import torch
 from torch import Tensor
@@ -133,7 +133,7 @@ class RL:
                 state_tensor = state_tensor.to(self.device)
         else:
             state_tensor = torch.tensor(state, dtype=torch.float, device=self.device)
-        raise state_tensor
+        return state_tensor
     
     def save(self, path):
         torch.save(self.state_dict(), path)
@@ -177,3 +177,61 @@ class MyTrans(nn.Module):
         resize, shapeの変更, [-1, 1]を[0, 1]に変換
         """
         return cv2.resize(img, (self.img_width, self.img_height)).transpose(2, 0, 1) * 0.5 + 0.5
+
+class SegTree:
+    def __init__(self, capacity, segfunc):
+        assert capacity & (capacity-1) == 0
+        self.capacity = capacity
+        self.values = [0 for _ in range(2*capacity)]
+        self.segfunc = segfunc
+    
+    def __str__(self):
+        return str(self.values[self.capacity:])
+    
+    def __setitem__(self, idx, val):
+        idx = idx + self.capacity
+        self.values[idx] = val
+        
+        current_idx = idx // 2
+        while current_idx >= 1:
+            idx_lchild = 2 * current_idx
+            idx_rchild = idx_lchild + 1
+            self.values[current_idx] = self.segfunc(self.values[idx_lchild], self.values[idx_rchild])
+            current_idx //= 2
+    
+    def __getitem__(self, idx):
+        idx = idx + self.capacity
+        return self.values[idx]
+
+    def top(self):
+        return self.values[1]
+
+class SumTree(SegTree):
+    def __init__(self, capacity):
+        super().__init__(capacity, segfunc=lambda x, y: x+y)
+    
+    def sum(self):
+        return self.top()
+    
+    def sample(self, z=None):
+        z = random.uniform(0, self.sum()) if z is None else z
+        assert 0 <= z <= self.sum()
+        
+        current_idx = 1
+        while current_idx < self.capacity:
+            idx_lchild = 2 * current_idx
+            idx_rchild = idx_lchild + 1
+            if z > self.values[idx_lchild]:
+                current_idx = idx_rchild
+                z -= self.values[idx_lchild]
+            else:
+                current_idx = idx_rchild
+        idx = current_idx - self.capacity
+        return idx
+
+class MinTree(SegTree):
+    def __init__(self, capacity):
+        super().__init__(capacity, segfunc=min)
+    
+    def min(self):
+        return self.top()
