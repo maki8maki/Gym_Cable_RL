@@ -87,8 +87,8 @@ class SAC(RL):
             p.requires_grad = False
         self.polyak = polyak
         self.gamma = gamma
-        self.alpha = alpha
-        self.target_entropy = -torch.prod(torch.Tensor(act_dim).to(device)).item()
+        self.alpha = torch.tensor(alpha)
+        self.target_entropy = -1 * act_dim
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
         self.alpha_optim = optim.Adam([self.log_alpha], lr=lr)
         self.device = device
@@ -118,10 +118,9 @@ class SAC(RL):
         q2_pi = self.ac.q2(states, pi)
         q_pi = torch.min(q1_pi, q2_pi)
         
-        return (self.alpha * logp_pi - q_pi).mean(), logp_pi
+        return (self.alpha.detach() * logp_pi - q_pi).mean(), logp_pi
 
-    def compute_loss_alpha(self, states):
-        _, logp_pi = self.ac.pi(states)
+    def compute_loss_alpha(self, logp_pi):
         return -(self.log_alpha * (logp_pi+self.target_entropy).detach()).mean()
     
     def update_from_batch(self, batch):
@@ -132,7 +131,7 @@ class SAC(RL):
         loss_q = self.compute_loss_q(tensors)
         loss_q.backward()
         self.q_opt.step()
-        self.info['loss_q'] = loss_q.to('cpu').detach().numpy().copy().mean()
+        self.info['loss_q'] = self.tensor2ndarray(loss_q).mean()
         
         for p in self.q_params:
             p.requires_grad = False
@@ -141,15 +140,15 @@ class SAC(RL):
         loss_pi, logp_pi = self.compute_loss_pi(states)
         loss_pi.backward()
         self.pi_opt.step()
-        self.info['loss_pi'] = loss_pi.to('cpu').detach().numpy().copy().mean()
-        self.info['logp_pi'] = logp_pi.to('cpu').detach().numpy().copy().mean()
+        self.info['loss_pi'] = self.tensor2ndarray(loss_pi).mean()
+        self.info['logp_pi'] = self.tensor2ndarray(logp_pi).mean()
         
-        loss_alpha = self.compute_loss_alpha(states)
+        loss_alpha = self.compute_loss_alpha(logp_pi)
         self.alpha_optim.zero_grad()
         loss_alpha.backward()
         self.alpha_optim.step()
         self.alpha = self.log_alpha.exp()
-        self.info['loss_alpha'] = loss_alpha.to('cpu').detach().numpy().copy().mean()
+        self.info['loss_alpha'] = self.tensor2ndarray(loss_alpha).mean()
         
         for p in self.q_params:
             p.requires_grad = True
@@ -179,4 +178,8 @@ class SAC(RL):
         super().to(device)
         self.ac.to(device)
         self.ac_targ.to(device)
-        self.log_alpha = self.log_alpha.to(device)
+        # なにか良い方法が欲しい
+        tmp_state_dict = self.alpha_optim.state_dict()
+        self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
+        self.alpha_optim = optim.Adam([self.log_alpha])
+        self.alpha_optim.load_state_dict(tmp_state_dict)
