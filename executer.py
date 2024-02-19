@@ -8,7 +8,7 @@ import gymnasium as gym
 import gym_cable
 
 from utils import return_transition, check_freq
-from config import Config
+from config import Config, PPOConfig
 
 class CombExecuter:
     def __init__(self, env_name: str, cfg: Config, options=None):
@@ -92,7 +92,7 @@ class CombExecuter:
             episode_reward += transition['reward']
             if self.update_count % self.cfg.update_every == 0:
                 for upc in range(self.cfg.update_every):
-                    batch = self.cfg.replay_buffer.sample(self.cfg.rl.model.batch_size)
+                    batch = self.cfg.replay_buffer.sample(self.cfg.batch_size)
                     self.cfg.rl.model.update_from_batch(batch)
                     num = self.update_count - (self.cfg.update_every - upc)
                     for key in self.cfg.rl.model.info.keys():
@@ -178,4 +178,57 @@ class CLCombExecuter(CombExecuter):
             self.train_step_loop(episode, state)
             if check_freq(self.cfg.nepisodes, episode, self.cfg.eval_num):
                 self.eval_episode_loop(episode, frames, titles)
+                self.cfg.rl.model.train()
+
+class CombPPOExecuter(CombExecuter):
+    def __init__(self, env_name: str, cfg: PPOConfig, options=None):
+        super().__init__(env_name, cfg, options)
+        self.cfg = cfg
+        self.ep = 1
+    
+    def train_step_loop(self):
+        episode_reward, episode_length = 0, 0
+        state = self.reset_get_state()
+        for step in tqdm(range(self.cfg.rl.model.buffer.memory_size), leave=False):
+            act, v, logp = self.cfg.rl.model.ac.step(torch.as_tensor(state, dtype=torch.float32, device=self.cfg.device))
+            transition = self.set_action(state, act)
+            self.cfg.rl.model.buffer.append(transition['state'], transition['action'], transition['reward'], v, logp)
+            episode_reward += transition['reward']
+            episode_length += 1
+            state = transition['next_state']
+            timeout = (episode_length == self.cfg.nsteps)
+            terminal = transition['done'] or timeout
+            epoch_ended = (step == self.cfg.rl.model.buffer.memory_size-1)
+            
+            if terminal or epoch_ended:
+                self.writer.add_scalar('train/reward', episode_reward, self.ep)
+                self.writer.add_scalar('train/step', episode_length, self.ep)
+                if timeout or epoch_ended:
+                    _, v, _ = self.cfg.rl.model.ac.step(torch.as_tensor(state, dtype=torch.float32, device=self.cfg.device))
+                else:
+                    v = 0
+                self.cfg.rl.model.buffer.finish_path(v)
+                state = self.reset_get_state()
+                episode_reward, episode_length = 0, 0
+                self.ep += 1
+    
+    def train_epoch_loop(self, frames: list, titles: list):
+        self.cfg.fe.model.eval()
+        self.cfg.rl.model.train()
+        for epoch in tqdm(range(self.cfg.nepochs)):
+            self.train_step_loop()
+            data = self.cfg.rl.model.buffer.sample()
+            indices = np.arange(self.cfg.rl.model.buffer.memory_size)
+            np.random.shuffle(indices)
+            loss_pi, loss_v = [], []
+            for start in range(0, self.cfg.rl.model.buffer.memory_size, self.cfg.batch_size):
+                idxes = indices[start:start+self.cfg.batch_size]
+                batch = {k: v[idxes] for k,v in data.items()}
+                self.cfg.rl.model.update_from_batch(batch)
+                loss_pi.append(self.cfg.rl.model.info['loss_pi'])
+                loss_v.append(self.cfg.rl.model.info['loss_v'])
+            self.writer.add_scalar('train/loss_pi', np.mean(loss_pi), epoch)
+            self.writer.add_scalar('train/loss_v', np.mean(loss_v), epoch)
+            if check_freq(self.cfg.nepochs, epoch, self.cfg.eval_num):
+                self.eval_episode_loop(epoch, frames, titles)
                 self.cfg.rl.model.train()

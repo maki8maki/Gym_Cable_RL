@@ -76,7 +76,7 @@ class MLPActorCritic(nn.Module):
 
 class SAC(RL):
     def __init__(self, obs_dim, act_dim, ac_kwargs=dict(), gamma=0.99, polyak=0.995,
-                 lr=1e-3, alpha=0.2, batch_size=32, device="cpu"):
+                 lr=1e-3, alpha=0.2, device="cpu"):
         super().__init__()
         self.ac = MLPActorCritic(obs_dim, act_dim, **ac_kwargs).to(device)
         self.ac_targ = copy.deepcopy(self.ac)
@@ -91,11 +91,10 @@ class SAC(RL):
         self.target_entropy = -torch.prod(torch.Tensor(act_dim).to(device)).item()
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
         self.alpha_optim = optim.Adam([self.log_alpha], lr=lr)
-        self.batch_size = batch_size
         self.device = device
     
     def compute_loss_q(self, tensors):
-        states, actions, next_states, rewards, dones = tensors
+        states, actions, next_states, rewards, dones = tensors['states'], tensors['actions'], tensors['next_states'], tensors['rewards'], tensors['dones']
         q1 = self.ac.q1(states, actions)
         q2 = self.ac.q2(states, actions)
         
@@ -127,7 +126,7 @@ class SAC(RL):
     
     def update_from_batch(self, batch):
         tensors = self.batch_to_tensor(batch)
-        states = tensors[0]
+        states = tensors['states']
 
         self.q_opt.zero_grad()
         loss_q = self.compute_loss_q(tensors)
@@ -161,14 +160,7 @@ class SAC(RL):
                 p_targ.data.add_((1-self.polyak) * p.data)
         
     def get_action(self, state, deterministic=False):
-        if isinstance(state, torch.Tensor):
-            state_tensor = state
-            if state_tensor.dtype != torch.float:
-                state_tensor = state_tensor.to(torch.float)
-            if state_tensor.device != self.device:
-                state_tensor = state_tensor.to(self.device)
-        else:
-            state_tensor = torch.tensor(state, dtype=torch.float, device=self.device)
+        state_tensor = super().get_action(state)
         return self.ac.get_action(state_tensor, deterministic)
     
     def state_dict(self):

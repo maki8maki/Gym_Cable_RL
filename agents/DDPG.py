@@ -89,14 +89,7 @@ class DDPG(RL):
 
     # Q値が最大の行動を選択
     def get_action(self, state, deterministic=False):
-        if isinstance(state, torch.Tensor):
-            state_tensor = state
-            if state_tensor.dtype != torch.float:
-                state_tensor = state_tensor.to(torch.float)
-            if state_tensor.device != self.device:
-                state_tensor = state_tensor.to(self.device)
-        else:
-            state_tensor = torch.tensor(state, dtype=torch.float, device=self.device)
+        state_tensor = super().get_action(state)
         with torch.no_grad():
            action =  self.actor(state_tensor.view(-1, self.num_state)).view(self.num_action).cpu().numpy()
         if not deterministic:
