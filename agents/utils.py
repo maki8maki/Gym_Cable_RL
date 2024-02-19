@@ -168,6 +168,9 @@ class RL:
     def to(self, device):
         self.device = device
     
+    def tensor2ndarray(self, t):
+        return t.to('cpu').detach().numpy().copy()
+    
     def _get_name(self):
         return self.__class__.__name__
         
