@@ -10,3 +10,4 @@ dacite
 omegaconf
 opencv-python
 tqdm
+scipy

@@ -5,5 +5,4 @@ _model:
   obs_dim: ${obs_dim}
   act_dim: ${act_dim}
   gamma: 0.7
-  batch_size: 50
   lr: 1e-3

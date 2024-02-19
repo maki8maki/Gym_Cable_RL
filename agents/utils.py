@@ -1,3 +1,5 @@
+import numpy as np
+import scipy
 import torch
 from torch import Tensor
 import torch.nn as nn
@@ -16,6 +18,23 @@ def mlp(sizes, activation, output_activation=nn.Identity):
         act = activation if j < len(sizes)-2 else output_activation
         layers += [nn.Linear(sizes[j], sizes[j+1]), act()]
     return nn.Sequential(*layers)
+
+def discount_cumsum(x, discount):
+    """
+    magic from rllab for computing discounted cumulative sums of vectors.
+
+    input: 
+        vector x, 
+        [x0, 
+         x1, 
+         x2]
+
+    output:
+        [x0 + discount * x1 + discount^2 * x2,  
+         x1 + discount * x2,
+         x2]
+    """
+    return scipy.signal.lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
 
 class Reshape(nn.Module):
     def __init__(self, shape):
@@ -84,14 +103,12 @@ class SSIMLoss(nn.Module):
         return kernel_2d
 
 class RL:
-    gamma: float
-    batch_size: int
     def __init__(self):
         self.info = {}
         self.device = 'cpu'
     
     def batch_to_tensor(self, batch, key_list=['states', 'actions', 'next_states', 'rewards', 'dones']):
-        return_list = []
+        return_list = {}
         for key in key_list:
             if isinstance(batch[key], torch.Tensor):
                 item = batch[key]
@@ -101,14 +118,22 @@ class RL:
                     item = item.to(self.device)
             else:
                 item = torch.tensor(batch[key], dtype=torch.float, device=self.device)
-            return_list.append(item)
+            return_list[key] = item
         return return_list
     
     def update_from_batch(self, batch):
         raise NotImplementedError
     
     def get_action(self, state, deterministic=False):
-        raise NotImplementedError
+        if isinstance(state, torch.Tensor):
+            state_tensor = state
+            if state_tensor.dtype != torch.float:
+                state_tensor = state_tensor.to(torch.float)
+            if state_tensor.device != self.device:
+                state_tensor = state_tensor.to(self.device)
+        else:
+            state_tensor = torch.tensor(state, dtype=torch.float, device=self.device)
+        raise state_tensor
     
     def save(self, path):
         torch.save(self.state_dict(), path)

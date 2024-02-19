@@ -11,6 +11,7 @@ nsteps: 100
 nepisodes: 5000
 nevalepisodes: 5
 update_every: 50
+batch_size: 50
 save_anim_num: 10
 eval_num: 100
 device: cuda
