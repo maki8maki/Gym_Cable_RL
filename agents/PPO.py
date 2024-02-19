@@ -102,7 +102,7 @@ class PPO(RL):
     def update_from_batch(self, batch):
         data = self.batch_to_tensor(batch, key_list=['obs', 'act', 'ret', 'adv', 'logp'])
         
-        for i in range(self.train_pi_iters):
+        for _ in range(self.train_pi_iters):
             self.pi_opt.zero_grad()
             loss_pi, pi_info = self.compute_loss_pi(data)
             kl = pi_info['kl']
@@ -110,7 +110,7 @@ class PPO(RL):
                 break
             loss_pi.backward()
             self.pi_opt.step()
-        for i in range(self.train_v_iters):
+        for _ in range(self.train_v_iters):
             self.vf_opt.zero_grad()
             loss_v = self.compute_loss_v(data)
             loss_v.backward()
