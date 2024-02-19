@@ -1,6 +1,6 @@
 from tqdm import tqdm
 import numpy as np
-import pickle
+import dill
 import os
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -9,6 +9,7 @@ import gym_cable
 
 from utils import return_transition, check_freq
 from config import Config, PPOConfig
+from agents.buffer import PrioritizedReplayBuffer
 
 class CombExecuter:
     def __init__(self, env_name: str, cfg: Config, options=None):
@@ -72,16 +73,16 @@ class CombExecuter:
                 else:
                     state = transition['next_state']
             with open(data_path, 'wb') as f:
-                pickle.dump(self.cfg.replay_buffer, f)
+                dill.dump(self.cfg.replay_buffer, f)
             # ログ出力フォルダにも保存
             with open(os.path.join(self.cfg.output_dir, self.cfg.buffer_name), 'wb') as f:
-                pickle.dump(self.cfg.replay_buffer, f)
+                dill.dump(self.cfg.replay_buffer, f)
         else:
             with open(data_path, 'rb') as f:
-                self.cfg.replay_buffer = pickle.load(f)
+                self.cfg.replay_buffer = dill.load(f)
             # ログ出力フォルダにも保存
             with open(os.path.join(self.cfg.output_dir, self.cfg.buffer_name), 'wb') as f:
-                pickle.dump(self.cfg.replay_buffer, f)
+                dill.dump(self.cfg.replay_buffer, f)
     
     def train_step_loop(self, episode: int, state: np.ndarray):
         episode_reward = 0
@@ -92,9 +93,14 @@ class CombExecuter:
             episode_reward += transition['reward']
             if self.update_count % self.cfg.update_every == 0:
                 for upc in range(self.cfg.update_every):
-                    batch = self.cfg.replay_buffer.sample(self.cfg.batch_size)
-                    self.cfg.rl.model.update_from_batch(batch)
                     num = self.update_count - (self.cfg.update_every - upc)
+                    if isinstance(self.cfg.replay_buffer, PrioritizedReplayBuffer):
+                        batch = self.cfg.replay_buffer.sample(self.cfg.batch_size, num)
+                        loss = self.cfg.rl.model.update_from_batch(batch)
+                        self.cfg.replay_buffer.update_priority(loss.flatten())
+                    else:
+                        batch = self.cfg.replay_buffer.sample(self.cfg.batch_size)
+                        _ = self.cfg.rl.model.update_from_batch(batch)
                     for key in self.cfg.rl.model.info.keys():
                         self.writer.add_scalar('train/'+key, self.cfg.rl.model.info[key], num)
             self.update_count += 1
