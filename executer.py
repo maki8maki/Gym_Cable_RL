@@ -21,7 +21,7 @@ class CombExecuter:
         )
         self.cfg = cfg
         self.options = options
-        self.update_count = 0
+        self.update_count = 1
         
         self.cfg.fe.model.load_state_dict(torch.load(f'./model/{self.cfg.fe.model_name}', map_location=self.cfg.device))
         self.cfg.fe.model.eval()
