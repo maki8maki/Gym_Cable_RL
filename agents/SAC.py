@@ -108,8 +108,8 @@ class SAC(RL):
             q_pi_targ = torch.min(q1_pi_targ, q2_pi_targ)
             target_q = rewards + self.gamma * (1-dones) * (q_pi_targ-self.alpha*logp_na)
         
-        loss_q1 = ((q1-target_q)**2).mean()
-        loss_q2 = ((q2-target_q)**2).mean()
+        loss_q1 = ((q1-target_q)**2)
+        loss_q2 = ((q2-target_q)**2)
         return loss_q1 + loss_q2
     
     def compute_loss_pi(self, states):
@@ -125,11 +125,14 @@ class SAC(RL):
     
     def update_from_batch(self, batch):
         tensors = self.batch_to_tensor(batch)
-        states = tensors['states']
 
         self.q_opt.zero_grad()
         loss_q = self.compute_loss_q(tensors)
-        loss_q.backward()
+        try:
+            loss = (loss_q * torch.tensor(tensors['weights'], dtype=torch.float32, device=self.device)).mean()
+        except KeyError:
+            loss = loss_q.mean()
+        loss.backward()
         self.q_opt.step()
         self.info['loss_q'] = self.tensor2ndarray(loss_q).mean()
         
@@ -137,7 +140,7 @@ class SAC(RL):
             p.requires_grad = False
         
         self.pi_opt.zero_grad()
-        loss_pi, logp_pi = self.compute_loss_pi(states)
+        loss_pi, logp_pi = self.compute_loss_pi(tensors['states'])
         loss_pi.backward()
         self.pi_opt.step()
         self.info['loss_pi'] = self.tensor2ndarray(loss_pi).mean()
@@ -157,6 +160,7 @@ class SAC(RL):
             for p, p_targ in zip(self.ac.parameters(), self.ac_targ.parameters()):
                 p_targ.data.mul_(self.polyak)
                 p_targ.data.add_((1-self.polyak) * p.data)
+        return self.tensor2ndarray(loss_pi)
         
     def get_action(self, state, deterministic=False):
         state_tensor = super().get_action(state)
