@@ -1,5 +1,6 @@
 from tqdm import tqdm
 import numpy as np
+import sys
 import pickle
 import os
 import torch
@@ -7,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 import gymnasium as gym
 import gym_cable
 
-from utils import return_transition, check_freq
+from utils import return_transition, check_freq, anim
 from config import Config, PPOConfig
 
 class CombExecuter:
@@ -155,10 +156,35 @@ class CombExecuter:
             else:
                 state = transition['next_state']
     
+    def train(self):
+        frames = []
+        titles = []
+        try:
+            self.train_epsiode_loop(frames=frames, titles=titles)
+        except KeyboardInterrupt:
+            self.cfg.rl.model.save(os.path.join(self.cfg.output_dir, f'{self.cfg.basename}.pth'))
+            anim(frames, titles=titles, filename=f'{self.cfg.output_dir}/{self.cfg.basename}-1.mp4', show=False)
+            sys.exit(1)
+        anim(frames, titles=titles, filename=f'{self.cfg.output_dir}/{self.cfg.basename}-1.mp4', show=False)
+    
+    def test(self):
+        frames = []
+        titles= []
+        self.test_step_loop(frames=frames, titles=titles)
+        anim(frames, titles=titles, filename=f'{self.cfg.output_dir}/{self.cfg.basename}-2.mp4', show=False)
+        self.cfg.rl.model.save(os.path.join(os.getcwd(), 'model', f'{self.cfg.basename}.pth'))
+        self.cfg.rl.model.save(os.path.join(self.cfg.output_dir, f'{self.cfg.basename}.pth'))
+    
     def close(self):
         self.env.close()
         self.writer.flush()
         self.writer.close()
+    
+    def __call__(self):
+        self.gathering_data()
+        self.train()
+        self.test()
+        self.close()
         
 
 class CLCombExecuter(CombExecuter):
@@ -221,7 +247,7 @@ class CombPPOExecuter(CombExecuter):
             indices = np.arange(self.cfg.rl.model.buffer.memory_size)
             np.random.shuffle(indices)
             loss_pi, loss_v = [], []
-            for start in range(0, self.cfg.rl.model.buffer.memory_size, self.cfg.batch_size):
+            for start in tqdm(range(0, self.cfg.rl.model.buffer.memory_size, self.cfg.batch_size), leave=False):
                 idxes = indices[start:start+self.cfg.batch_size]
                 batch = {k: v[idxes] for k,v in data.items()}
                 self.cfg.rl.model.update_from_batch(batch)
@@ -232,3 +258,52 @@ class CombPPOExecuter(CombExecuter):
             if check_freq(self.cfg.nepochs, epoch, self.cfg.eval_num):
                 self.eval_episode_loop(epoch, frames, titles)
                 self.cfg.rl.model.train()
+
+    def eval_episode_loop(self, episode: int, frames: list, titles: list):
+        self.cfg.rl.model.eval()
+        eval_reward = 0.0
+        steps = 0.0
+        for evalepisode in range(self.cfg.nevalepisodes):
+            save_frames = (evalepisode==0) and check_freq(self.cfg.nepochs, episode, self.cfg.save_anim_num)
+            state = self.reset_get_state()
+            if save_frames:
+                frames.append(self.env.render())
+                titles.append(f'Episode {episode+1}')
+            for step in range(self.cfg.nsteps):
+                action = self.cfg.rl.model.get_action(state, deterministic=True)
+                transition = self.set_action(state, action)
+                eval_reward += transition['reward']
+                if save_frames:
+                    frames.append(self.env.render())
+                    titles.append(f'Episode {episode+1}')
+                if transition['done']:
+                    break
+                else:
+                    state = transition['next_state']
+            steps += step + 1.0
+        self.writer.add_scalar('test/reward', eval_reward/self.cfg.nevalepisodes, episode+1)
+        self.writer.add_scalar('test/step', steps/self.cfg.nevalepisodes, episode+1)
+    
+    def train(self):
+        frames = []
+        titles = []
+        try:
+            self.train_epoch_loop(frames=frames, titles=titles)
+        except KeyboardInterrupt:
+            self.cfg.rl.model.save(os.path.join(self.cfg.output_dir, f'{self.cfg.basename}.pth'))
+            anim(frames, titles=titles, filename=f'{self.cfg.output_dir}/{self.cfg.basename}-1.mp4', show=False)
+            sys.exit(1)
+        anim(frames, titles=titles, filename=f'{self.cfg.output_dir}/{self.cfg.basename}-1.mp4', show=False)
+    
+    def test(self):
+        frames = []
+        titles= []
+        self.test_step_loop(frames=frames, titles=titles)
+        anim(frames, titles=titles, filename=f'{self.cfg.output_dir}/{self.cfg.basename}-2.mp4', show=False)
+        self.cfg.rl.model.save(os.path.join(os.getcwd(), 'model', f'{self.cfg.basename}.pth'))
+        self.cfg.rl.model.save(os.path.join(self.cfg.output_dir, f'{self.cfg.basename}.pth'))
+    
+    def __call__(self):
+        self.train()
+        self.test()
+        self.close()
