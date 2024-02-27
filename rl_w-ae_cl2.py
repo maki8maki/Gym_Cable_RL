@@ -1,9 +1,8 @@
 import numpy as np
-import os
 import hydra
 from omegaconf import OmegaConf
 
-from utils import anim, yes_no_input
+from utils import yes_no_input
 from config import Config
 from executer import CLCombExecuter
 
