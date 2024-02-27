@@ -1,6 +1,7 @@
 defaults:
   - fe: defaults
   - rl: defaults
+  - _self_
 
 hydra:
   run:
