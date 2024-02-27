@@ -58,7 +58,7 @@ class CombExecuter:
             action = np.concatenate([action, np.zeros((self.env.action_space.shape[0]-self.cfg.rl.act_dim,))])
         next_obs, reward, terminated, truncated, _ = self.env.step(action)
         next_state = self.obs2state(next_obs)
-        transition = return_transition(state, next_state, reward, action, terminated, truncated)
+        transition = return_transition(state, next_state, reward, action[:self.cfg.rl.act_dim], terminated, truncated)
         return transition
     
     def gathering_data(self):
@@ -156,7 +156,7 @@ class CombExecuter:
             action = self.cfg.rl.model.get_action(state, deterministic=True)
             transition = self.set_action(state, action)
             frames.append(self.env.render())
-            titles.append(f'Episode {step+1}')
+            titles.append(f'Step {step+1}')
             if transition['done']:
                 break
             else:
