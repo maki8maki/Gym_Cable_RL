@@ -1,6 +1,6 @@
 import random
 import scipy
-import torch
+import torch as th
 from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
@@ -36,12 +36,15 @@ def discount_cumsum(x, discount):
     """
     return scipy.signal.lfilter([1], [1, float(-discount)], x[::-1], axis=0)[::-1]
 
+def torch_log(x: th.Tensor) -> th.Tensor:
+    return th.log(th.clamp(x, min=1e-10))
+
 class Reshape(nn.Module):
     def __init__(self, shape):
         super(Reshape, self).__init__()
         self.shape = shape
 
-    def forward(self,x):
+    def forward(self, x: th.Tensor):
         return x.reshape(self.shape)
 
 class SSIMLoss(nn.Module):
@@ -94,11 +97,11 @@ class SSIMLoss(nn.Module):
     def _create_gaussian_kernel(self, channel: int, kernel_size: int, sigma: float) -> Tensor:
         start = (1 - kernel_size) / 2
         end = (1 + kernel_size) / 2
-        kernel_1d = torch.arange(start, end, step=1, dtype=torch.float)
-        kernel_1d = torch.exp(-torch.pow(kernel_1d / sigma, 2) / 2)
+        kernel_1d = th.arange(start, end, step=1, dtype=th.float)
+        kernel_1d = th.exp(-th.pow(kernel_1d / sigma, 2) / 2)
         kernel_1d = (kernel_1d / kernel_1d.sum()).unsqueeze(dim=0)
 
-        kernel_2d = torch.matmul(kernel_1d.t(), kernel_1d)
+        kernel_2d = th.matmul(kernel_1d.t(), kernel_1d)
         kernel_2d = kernel_2d.expand(channel, 1, kernel_size, kernel_size).contiguous()
         return kernel_2d
 
@@ -110,14 +113,14 @@ class RL:
     def batch_to_tensor(self, batch, key_list=['states', 'actions', 'next_states', 'rewards', 'dones']):
         return_list = {}
         for key in key_list:
-            if isinstance(batch[key], torch.Tensor):
+            if isinstance(batch[key], th.Tensor):
                 item = batch[key]
-                if item.dtype != torch.float:
-                    item = item.to(torch.float)
+                if item.dtype != th.float:
+                    item = item.to(th.float)
                 if item.device != self.device:
                     item = item.to(self.device)
             else:
-                item = torch.tensor(batch[key], dtype=torch.float, device=self.device)
+                item = th.tensor(batch[key], dtype=th.float, device=self.device)
             return_list[key] = item
         return return_list
     
@@ -125,21 +128,21 @@ class RL:
         raise NotImplementedError
     
     def get_action(self, state, deterministic=False):
-        if isinstance(state, torch.Tensor):
+        if isinstance(state, th.Tensor):
             state_tensor = state
-            if state_tensor.dtype != torch.float:
-                state_tensor = state_tensor.to(torch.float)
+            if state_tensor.dtype != th.float:
+                state_tensor = state_tensor.to(th.float)
             if state_tensor.device != self.device:
                 state_tensor = state_tensor.to(self.device)
         else:
-            state_tensor = torch.tensor(state, dtype=torch.float, device=self.device)
+            state_tensor = th.tensor(state, dtype=th.float, device=self.device)
         return state_tensor
     
     def save(self, path):
-        torch.save(self.state_dict(), path)
+        th.save(self.state_dict(), path)
     
     def load(self, path):
-        state_dict = torch.load(path, map_location=self.device)
+        state_dict = th.load(path, map_location=self.device)
         self.load_state_dict(state_dict)
     
     def state_dict(self):
