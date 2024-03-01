@@ -1,18 +1,19 @@
 import random
 import numpy as np
-import torch
+import torch as th
+import torch.nn as nn
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
+    th.manual_seed(seed)
+    th.backends.cudnn.deterministic = True
+    th.backends.cudnn.benchmark = False
+    if th.cuda.is_available():
+        th.cuda.manual_seed(seed)
+        th.cuda.manual_seed_all(seed)
 
 def anim(frames, titles=None, filename=None, show=True):
     plt.figure(figsize=(frames[0].shape[1]/72.0, frames[0].shape[0]/72.0), dpi=144)
@@ -60,7 +61,7 @@ def obs2state_through_fe(obs, observation_space, model, trans, image_list=['rgb_
     image = normalized_obs[image_list[0]]
     for name in image_list[1:]:
         image = np.concatenate([image, normalized_obs[name]], axis=2)
-    image = torch.tensor(trans(image), dtype=torch.float, device=device)
+    image = th.tensor(trans(image), dtype=th.float, device=device)
     hs = model.forward(image).cpu().squeeze().detach().numpy()
     state = np.concatenate([hs, normalized_obs['observation'][:obs_dim]])
     return state
@@ -88,7 +89,7 @@ def check_freq(total: int, current: int, num: int):
     return ((current+1) % (total/num) == 0)
 
 class EarlyStopping:
-    def __init__(self, patience=7, verbose=False, delta=0, path='checkpoint.pth', trace_func=print):
+    def __init__(self, patience=7, verbose=False, delta=0, paths=['checkpoint.pth'], trace_func=print):
         self.patience = patience
         self.verbose = verbose
         self.counter = 0
@@ -96,7 +97,7 @@ class EarlyStopping:
         self.early_stop = False
         self.val_loss_min = np.Inf
         self.delta = delta
-        self.path = path
+        self.paths = paths
         self.trace_func = trace_func
 
     def __call__(self, val_loss, model):
@@ -116,9 +117,10 @@ class EarlyStopping:
             self.counter = 0
         return self.early_stop
 
-    def save_checkpoint(self, val_loss, model):
+    def save_checkpoint(self, val_loss, model: nn.Module):
         '''Saves model when validation loss decrease.'''
         if self.verbose:
             self.trace_func(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
-        torch.save(model.state_dict(), self.path)
+        for path in self.paths:
+            th.save(model.state_dict(), path)
         self.val_loss_min = val_loss
