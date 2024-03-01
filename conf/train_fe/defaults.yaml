@@ -1,0 +1,26 @@
+defaults:
+  - fe: ../../fe/conv-vae
+  - _self_
+
+hydra:
+  run:
+    dir: logs/${basename}/${now:%Y%m%d-%H%M}
+
+basename: ConvVAE
+log_name: grasp_rgbd
+
+nsteps: 100
+is_random: False
+
+batch_size: 12
+nepochs: 500
+es_patience: 50
+
+device: cuda
+seed: 42
+
+gathering_data: False
+with_init: False
+data_size: 10000
+
+save_recimg_num: 10
