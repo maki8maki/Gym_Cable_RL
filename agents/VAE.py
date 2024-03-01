@@ -4,11 +4,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from .utils import Reshape, torch_log
+from .utils import Reshape, torch_log, FE
 
-class ConvVAE(nn.Module):
+class ConvVAE(FE):
     def __init__(self, img_height, img_width, img_channel, hidden_dim, lr=1e-3, net_activation: nn.Module=nn.ReLU(inplace=True),
-                 hidden_activation: Callable[[th.Tensor], th.Tensor]=F.tanh, loss_func: Callable[[th.Tensor, th.Tensor], th.Tensor]=F.mse_loss) -> None:
+                 hidden_activation: Callable[[th.Tensor], th.Tensor]=F.tanh) -> None:
         super().__init__()
         channels = [img_channel, 32, 64, 128, 256, 512]
         kernel_size = 3
@@ -75,6 +75,3 @@ class ConvVAE(nn.Module):
         y = self._decode(z)
         re = -th.mean(th.sum(x*torch_log(y) + (1-x)*torch_log(1-y), dim=1))
         return kl + re
-    
-    def __repr__(self):
-        return self._get_name() +'()'

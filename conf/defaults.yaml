@@ -9,6 +9,7 @@ hydra:
 
 memory_size: 10000
 nsteps: 100
+is_random: False
 nepisodes: 5000
 nevalepisodes: 5
 update_every: 50
@@ -22,6 +23,7 @@ _replay_buffer:
   memory_size: ${memory_size}
 
 basename: SAC_trainedDCAE_cl2_o-${rl.obs_dim}_a-${rl.act_dim}
-output_dir: ${hydra:runtime.output_dir}
 
 gathering_data: True
+
+fe_with_init: True
