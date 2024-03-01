@@ -160,7 +160,7 @@ class SAC(RL):
             for p, p_targ in zip(self.ac.parameters(), self.ac_targ.parameters()):
                 p_targ.data.mul_(self.polyak)
                 p_targ.data.add_((1-self.polyak) * p.data)
-        return self.tensor2ndarray(loss_pi)
+        return self.tensor2ndarray(loss_q)
         
     def get_action(self, state, deterministic=False):
         state_tensor = super().get_action(state)

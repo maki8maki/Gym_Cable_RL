@@ -1,9 +1,10 @@
+import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from agents.utils import size_after_conv, size_after_pooling, Reshape
+from agents.utils import size_after_conv, size_after_pooling, Reshape, FE
 
-class DCAE(nn.Module):
+class DCAE(FE):
     def __init__(self, img_height, img_width, img_channel, hidden_dim, lr=1e-3, net_activation=nn.ReLU(inplace=True), hidden_activation=F.tanh, loss_func=F.mse_loss) -> None:
         super().__init__()
         channels = [img_channel, 32, 64, 128, 256]
@@ -70,7 +71,7 @@ class DCAE(nn.Module):
         self.optim = optim.Adam(self.parameters(), lr=lr)
         self.loss_func = loss_func
     
-    def forward(self, x, return_pred=False):
+    def forward(self, x: th.Tensor, return_pred: bool = False):
         h = self.encoder(x)
         if not return_pred:
             return self.hidden_activation(h)
@@ -78,6 +79,7 @@ class DCAE(nn.Module):
             x_pred = self.decoder(self.net_activation(h))
             return h, x_pred
     
-    def __repr__(self):
-        return self._get_name() +'()'
+    def loss(self, x: th.Tensor) -> th.Tensor:
+        _, y = self.forward(x)
+        return self.loss_func(y, x)
     

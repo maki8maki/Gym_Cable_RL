@@ -1,4 +1,5 @@
 import random
+from typing import Tuple, Union
 import scipy
 import torch as th
 from torch import Tensor
@@ -167,6 +168,20 @@ class RL:
         return self.__class__.__name__
         
     def __repr__(self) -> str:
+        return self._get_name() +'()'
+
+class FE(nn.Module):
+    optim: th.optim.Optimizer
+    def __init__(self):
+        super().__init__()
+    
+    def forward(self, x: th.Tensor, return_pred: bool=False) -> Union[th.Tensor, Tuple[th.Tensor, th.Tensor]]:
+        raise NotImplementedError()
+    
+    def loss(self, x: th.Tensor) -> th.Tensor:
+        raise NotImplementedError()
+    
+    def __repr__(self):
         return self._get_name() +'()'
 
 class MyTrans(nn.Module):
