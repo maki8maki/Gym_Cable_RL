@@ -1,14 +1,17 @@
 import numpy as np
-import torch
+from typing import Type
+import torch as th
 import torchvision.transforms.functional as F
 from gymnasium import spaces
-from agents.buffer import ReplayBuffer
-from agents.DCAE import DCAE
-from agents.DDPG import DDPG
-from agents.SAC import SAC
+
+from .buffer import ReplayBuffer
+from .DCAE import DCAE
+from .DDPG import DDPG
+from .SAC import SAC
+from .utils import FE, RL
 
 class Comb:
-    def __init__(self, fe, rl, image_size, hidden_dim, observation_space, action_space, 
+    def __init__(self, fe: Type[FE], rl: Type[RL], image_size, hidden_dim, observation_space, action_space, 
                  fe_kwargs=dict(), rl_kwargs=dict(), memory_size=50000, device="cpu"):
         self.fe = fe(image_size=image_size, hidden_dim=hidden_dim, **fe_kwargs).to(device)
         hidden_low = np.full(hidden_dim, -1.0)
@@ -23,8 +26,8 @@ class Comb:
     def get_action(self, state, deterministic=False):
         image_tensor = F.to_tensor(state['image']).to(self.device)
         h = self.fe.forward(image_tensor).squeeze().detach()
-        obs_tensor = torch.tensor(state['observation'], dtype=torch.float, device=self.device)
-        _state = torch.cat((h, obs_tensor))
+        obs_tensor = th.tensor(state['observation'], dtype=th.float, device=self.device)
+        _state = th.cat((h, obs_tensor))
         return self.rl.get_action(_state, deterministic)
     
     def batch_to_hidden_state(self, batch):
@@ -34,15 +37,15 @@ class Comb:
             rbs.append(state['observation'])
             next_imgs.append(next_state['image'])
             next_rbs.append(next_state['observation'])
-        imgs = torch.tensor(np.array(imgs), dtype=torch.float, device=self.device).permute(0, 3, 1, 2)
-        rbs = torch.tensor(np.array(rbs), dtype=torch.float, device=self.device)
-        next_imgs = torch.tensor(np.array(next_imgs), dtype=torch.float, device=self.device).permute(0, 3, 1, 2)
-        next_rbs = torch.tensor(np.array(next_rbs), dtype=torch.float, device=self.device)
+        imgs = th.tensor(np.array(imgs), dtype=th.float, device=self.device).permute(0, 3, 1, 2)
+        rbs = th.tensor(np.array(rbs), dtype=th.float, device=self.device)
+        next_imgs = th.tensor(np.array(next_imgs), dtype=th.float, device=self.device).permute(0, 3, 1, 2)
+        next_rbs = th.tensor(np.array(next_rbs), dtype=th.float, device=self.device)
         hs, imgs_pred = self.fe.forward(imgs, return_pred=True)
         hs = hs.detach()
         loss = self.fe.loss_func(imgs_pred, imgs)
         next_hs = self.fe.forward(next_imgs).detach()
-        return loss, torch.cat((hs, rbs), axis=1), torch.cat((next_hs, next_rbs), axis=1)
+        return loss, th.cat((hs, rbs), axis=1), th.cat((next_hs, next_rbs), axis=1)
     
     def update(self):
         batch = self.replay_buffer.sample(self.rl.batch_size)
@@ -53,10 +56,10 @@ class Comb:
         self.rl.update_from_batch(batch)
     
     def save(self, path):
-        torch.save(self.state_dict(), path)
+        th.save(self.state_dict(), path)
     
     def load(self, path):
-        state_dicts = torch.load(path, map_location=self.device)
+        state_dicts = th.load(path, map_location=self.device)
         self.load_state_dict(state_dicts)
     
     def load_state_dict(self, state_dicts):
