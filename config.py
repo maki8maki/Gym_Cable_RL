@@ -58,7 +58,7 @@ class RLConfig:
         return self_copy
 
 @dataclasses.dataclass
-class Config:
+class CombConfig:
     fe: FEConfig
     rl: RLConfig
     basename: str
