@@ -9,11 +9,11 @@ import gymnasium as gym
 import gym_cable
 
 from utils import return_transition, check_freq, anim
-from config import Config, PPOConfig
+from config import CombConfig, PPOConfig
 from agents.buffer import PrioritizedReplayBuffer
 
 class CombExecuter:
-    def __init__(self, env_name: str, cfg: Config, options=None):
+    def __init__(self, env_name: str, cfg: CombConfig, options=None):
         gym_cable.register_robotics_envs()
         self.env = gym.make(env_name, render_mode="rgb_array", max_episode_steps=cfg.nsteps, is_random=False)
         self.writer = SummaryWriter(log_dir=cfg.output_dir)
@@ -194,7 +194,7 @@ class CombExecuter:
         
 
 class CLCombExecuter(CombExecuter):
-    def __init__(self, env_name: str, cfg: Config, cl_scheduler: list):
+    def __init__(self, env_name: str, cfg: CombConfig, cl_scheduler: list):
         super().__init__(env_name=env_name, cfg=cfg, options=cl_scheduler[0][1])
         self.cl_scheduler = cl_scheduler
     
