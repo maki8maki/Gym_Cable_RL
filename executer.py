@@ -6,6 +6,7 @@ import sys
 import dill
 import os
 import torch as th
+import torch.utils.data as th_data
 from torch.utils.tensorboard import SummaryWriter
 import gymnasium as gym
 import gym_cable
@@ -90,12 +91,15 @@ class FEExecuter(Executer):
                             pbar.update(1)
             self.imgs = np.array(imgs)
             np.save(data_path, self.imgs)
+            np.save(os.path.join(self.cfg.output_dir, self.cfg.data_name), self.imgs)
         else:
             self.imgs = np.load(data_path)
+            np.save(os.path.join(self.cfg.output_dir, self.cfg.data_name), self.imgs)
 
     def train(self):
-        train_imgs, test_imgs = th.utils.data.random_split(self.imgs, [0.7, 0.3])
-        train_data = th.utils.data.DataLoader(dataset=train_imgs, batch_size=self.cfg.batch_size, shuffle=True)
+        train_imgs, test_imgs = th_data.random_split(self.imgs, [0.7, 0.3])
+        train_data = th_data.DataLoader(dataset=train_imgs, batch_size=self.cfg.batch_size, shuffle=True)
+        test_data = th_data.DataLoader(dataset=test_imgs, batch_size=self.cfg.batch_size, shuffle=False)
         test_list = list(test_imgs)
 
         for epoch in tqdm(range(self.cfg.nepochs)):
@@ -110,15 +114,18 @@ class FEExecuter(Executer):
                 train_loss.append(loss.cpu().detach().numpy())
             train_loss = np.mean(train_loss)
 
+            test_loss = []
             self.cfg.fe.model.eval()
             with th.no_grad():
-                x = test_imgs.to(self.cfg.device)
-                test_loss = self.cfg.fe.model.loss(x)
-                test_loss = np.mean(test_loss.cpu().detach().numpy())
+                for x in test_data:
+                    x = x.to(self.cfg.device)
+                    loss = self.cfg.fe.model.loss(x)
+                    test_loss.append(loss.cpu().detach().numpy())
+            test_loss = np.mean(test_loss)
             self.writer.add_scalar('train/loss', train_loss, epoch+1)
             self.writer.add_scalar('test/loss', test_loss, epoch+1)
             if check_freq(self.cfg.nepochs, epoch, self.cfg.save_recimg_num):
-                x = th.tensor(random.choice(test_list)).to(self.cfg.device)
+                x = th.tensor(random.choice(test_list)).to(self.cfg.device).unsqueeze(0)
                 _, y = self.cfg.fe.model.forward(x, return_pred=True)
                 x = x.squeeze()
                 y = y.squeeze()

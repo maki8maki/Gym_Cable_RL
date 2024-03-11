@@ -7,7 +7,7 @@ import torch.optim as optim
 from .utils import Reshape, torch_log, FE
 
 class ConvVAE(FE):
-    def __init__(self, img_height, img_width, img_channel, hidden_dim, lr=1e-3, net_activation: nn.Module=nn.ReLU(inplace=True),
+    def __init__(self, img_height, img_width, img_channel, hidden_dim, lr=1e-3, net_activation: nn.Module=nn.ReLU(inplace=True), device='cpu',
                  hidden_activation: Callable[[th.Tensor], th.Tensor]=F.tanh) -> None:
         super().__init__()
         channels = [img_channel, 32, 64, 128, 256, 512]
@@ -18,6 +18,7 @@ class ConvVAE(FE):
             modules.append(
                 nn.Sequential(
                     nn.Conv2d(in_channels=channels[i], out_channels=channels[i+1], kernel_size=kernel_size),
+                    # nn.BatchNorm2d(channels[i+1]),
                     net_activation,
                 )
             )
@@ -35,6 +36,7 @@ class ConvVAE(FE):
             modules.append(
                 nn.Sequential(
                     nn.ConvTranspose2d(in_channels=channels[i], out_channels=channels[i+1], kernel_size=kernel_size),
+                    # nn.BatchNorm2d(channels[i+1]),
                     net_activation
                 )
             )
@@ -42,6 +44,7 @@ class ConvVAE(FE):
         
         self.hidden_activation = hidden_activation
         self.optim = optim.Adam(self.parameters(), lr=lr)
+        self.device = device
     
     def _encode(self, input: th.Tensor) -> Tuple[th.Tensor, th.Tensor]:
         tmp = self.encoder(input)
@@ -50,11 +53,11 @@ class ConvVAE(FE):
         return mu, std
     
     def _decode(self, z: th.Tensor) -> th.Tensor:
-        return th.sigmoid(self.decoder(z))
+        return self.decoder(z)
     
     def _reparameterize(self, mu: th.Tensor, std: th.Tensor) -> th.Tensor:
         if self.training:
-            eps = th.randn(mu.shape)
+            eps = th.randn(mu.shape).to(self.device)
             return eps.mul(std).add_(mu)
         else:
             return mu
@@ -75,3 +78,7 @@ class ConvVAE(FE):
         y = self._decode(z)
         re = -th.mean(th.sum(x*torch_log(y) + (1-x)*torch_log(1-y), dim=1))
         return kl + re
+
+    def to(self, device):
+        super().to(device)
+        self.device = device
