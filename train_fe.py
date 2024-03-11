@@ -6,7 +6,7 @@ from executer import FEExecuter
 
 from utils import yes_no_input
 
-@hydra.main(config_path='conf/train_fe', config_name='train_fe', version_base=None)
+@hydra.main(config_path='conf/train_fe', config_name='config', version_base=None)
 def main(_cfg: OmegaConf):
     cfg = TrainFEConfig.convert(_cfg)
     print(f'\n{cfg}\n')

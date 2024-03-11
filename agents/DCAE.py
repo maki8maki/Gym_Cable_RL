@@ -80,6 +80,6 @@ class DCAE(FE):
             return h, x_pred
     
     def loss(self, x: th.Tensor) -> th.Tensor:
-        _, y = self.forward(x)
+        _, y = self.forward(x, return_pred=True)
         return self.loss_func(y, x)
     
