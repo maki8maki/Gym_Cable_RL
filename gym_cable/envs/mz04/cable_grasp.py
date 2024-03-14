@@ -1,6 +1,7 @@
 import os
 import numpy as np
 
+import gymnasium as gym
 from gymnasium.utils.ezpickle import EzPickle
 from gym_cable.envs.mz04.mz04_env import MujocoMZ04Env
 
@@ -44,5 +45,4 @@ class MujocoMZ04CableGraspEnv(MujocoMZ04Env, EzPickle):
         EzPickle.__init__(self, **kwargs)
         
         # 観測範囲を限定
-        self.observation_space["observation"].low = np.array([0.0, -1.0, 0.0, -np.pi, -np.pi, -np.pi])
-        self.observation_space["observation"].high = np.array([2.0, 1.0, 2.0, np.pi, np.pi, np.pi])
+        self.observation_space["observation"] = gym.spaces.Box(low=np.array([-0.0, -1.0, -0.0, -np.pi, -np.pi, -np.pi]), high=np.array([2.0, 1.0, 2.0, np.pi, np.pi, np.pi]), dtype='float64')
