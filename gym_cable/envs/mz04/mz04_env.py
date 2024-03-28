@@ -56,8 +56,8 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
         def compute_reward(self, obs, goal, info):
             if self.terminated:
                 reward = 10
-            # elif self.truncated:
-            #     reward = -10
+            elif self.truncated:
+                reward = -1
             else:
                 position_err, posture_err = self._utils.calc_err_norm(obs, goal)
                 err_norm = position_err + posture_err * self.rot_weight
