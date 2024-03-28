@@ -22,8 +22,7 @@
 			0.270     0.0 0.2305
 			0.265     0.0 0.2305
 			0.260     0.0 0.2305
-			0.2564645 0.0 0.2340355
-			0.2564645 0.0 0.236
+			0.260     0.0 0.2355
 			0.260     0.0 0.236
 			0.265     0.0 0.236
 			0.270     0.0 0.236
@@ -40,7 +39,7 @@
 			<geom type="box" size="0.005 0.0085 0.0003" rgba=".8 .2 .1 1" group="3"/>
 		</composite>
 
-		<geom name="floor0" pos="0 0 0" size="0.85 0.7 1" type="plane" condim="3" material="floor_mat"></geom>
+		<geom name="floor0" pos="0 0 0" size="5 5 1" type="plane" condim="3" material="floor_mat"></geom>
 		<geom name="box" size="0.1 0.1 0.4" pos="0.45 0 0" type="box"></geom>
 		<body name="circuit" pos="0.35 0 0.4" childclass="circuit">
 			<joint name="circuit:joint" type="free" damping="0.01"></joint>
