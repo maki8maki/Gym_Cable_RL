@@ -11,8 +11,8 @@ def main(_cfg: OmegaConf):
     cfg = TrainFEConfig.convert(_cfg)
     print(f'\n{cfg}\n')
 
-    # if not yes_no_input("fe.model_name, basename and data_name"):
-    #     exit()
+    if not yes_no_input("fe.model_name, basename and data_name"):
+        exit()
     
     executer = FEExecuter(env_name='MZ04CableGrasp-v0', cfg=cfg)
     del cfg, _cfg
