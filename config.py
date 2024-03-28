@@ -148,7 +148,7 @@ class CombConfig:
             random = 'r'
         else:
             random = 's'
-        self.buffer_name = f'buffer_o-{self.rl.obs_dim}_a-{self.rl.act_dim}_w-hs_{self.memory_size}.pcl'
+        self.buffer_name = f'buffer_o-{self.rl.obs_dim}_a-{self.rl.act_dim}_{random}_w-hs_{self.memory_size}.pcl'
         self.fe.model_name = self.fe.model_name.replace('.pth', f'_{random}_{init}.pth')
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
@@ -161,7 +161,7 @@ class CombConfig:
         cfg.rl = cfg.rl.convert(OmegaConf.create(_cfg.rl))
         cfg.fe.model.to(cfg.device)
         cfg.rl.model.to(cfg.device)
-        cfg.basename = _cfg.basename
+        cfg.basename = _cfg.basename + ('_r' if cfg.is_random else '_s')
         cfg.replay_buffer = hydra.utils.instantiate(_cfg._replay_buffer)
         return cfg
 
