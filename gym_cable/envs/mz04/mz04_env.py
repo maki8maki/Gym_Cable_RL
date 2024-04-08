@@ -23,8 +23,10 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
         def __init__(
             self,
             target_offset,
-            obj_range,
-            is_random,
+            obj_position_range,
+            obj_posture_range,
+            position_random,
+            posture_random,
             distance_threshold,
             rotation_threshold,
             rot_weight,
@@ -36,14 +38,17 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
                 model_path (string): path to the environments XML file
                 n_substeps (int): number of substeps the simulation runs on every call to step
                 target_offset (float or array with 3 elements): offset of the target
-                obj_range (float): range of a uniform distribution for sampling initial object positions
+                obj_position_range (float): range of a uniform distribution for sampling initial object positions
+                obj_postures_range (int): range of a uniform distribution for sampling initial object postures
                 distance_threshold (float): the threshold after which a goal is considered achieved
                 initial_qpos (dict): a dictionary of joint names and values that define the initial configuration
             """
 
             self.target_offset = target_offset
-            self.obj_range = obj_range
-            self.is_random = is_random
+            self.obj_position_range = obj_position_range
+            self.obj_posture_range = obj_posture_range
+            self.position_random = position_random
+            self.posture_random = posture_random
             self.distance_threshold = distance_threshold
             self.rotation_threshold = rotation_threshold
             self.rot_weight = rot_weight
@@ -186,14 +191,17 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         if self.model.na != 0:
             self.data.act[:] = None
 
-        # Randomize start position of object.
-        if self.is_random:
-            diff = self.np_random.uniform(-self.obj_range, self.obj_range)
+        # Randomize start position and posture of object.
+        if self.position_random:
+            diff = self.np_random.uniform(-self.obj_position_range, self.obj_position_range)
             circuit_pos = np.copy(self.initial_circuit_pos)
             circuit_pos[1] += diff
             self._utils.set_joint_qpos(self.model, self.data, "circuit:joint", circuit_pos)
             self.model.body("B_first").pos = np.copy(self.initial_cable_pos)
             self.model.body("B_first").pos[1] += diff
+        if self.posture_random:
+            diff = self.np_random.uniform(0, self.obj_posture_range)
+            self.model.body('B_10').quat = rotations.euler2quat(np.deg2rad(np.array([0, diff-90, 0])))
 
         self._mujoco.mj_forward(self.model, self.data)
         return True

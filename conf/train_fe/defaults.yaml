@@ -10,7 +10,8 @@ basename: DCAE
 log_name: grasp_rgbd
 
 nsteps: 100
-is_random: False
+position_random: False
+posture_random: False
 
 batch_size: 128
 nepochs: 500

@@ -1,7 +1,6 @@
 from tqdm import tqdm
 from typing import Union
 import numpy as np
-import random
 import sys
 import dill
 import os
@@ -55,14 +54,13 @@ class FEExecuter(Executer):
     def __init__(self, env_name: str, cfg: TrainFEConfig):
         super().__init__()
         gym_cable.register_robotics_envs()
-        self.env = gym.make(env_name, render_mode="rgb_array", max_episode_steps=cfg.nsteps, is_random=cfg.is_random)
+        self.env = gym.make(env_name, render_mode="rgb_array", max_episode_steps=cfg.nsteps, position_random=cfg.position_random, posture_random=cfg.posture_random)
         self.writer = SummaryWriter(log_dir=cfg.output_dir)
         self.cfg = cfg
         model_path1 = os.path.join(os.getcwd(), 'model', cfg.fe.model_name)
         model_path2 = os.path.join(cfg.output_dir, cfg.fe.model_name)
         self.es = EarlyStopping(patience=self.cfg.es_patience, paths=[model_path1, model_path2], trace_func=tqdm.write)
         self.cfg.fe.model.train()
-        self.imgs = None
     
     def gathering_data(self):
         data_path = os.path.join(os.getcwd(), 'data', self.cfg.data_name)
@@ -101,6 +99,8 @@ class FEExecuter(Executer):
         train_data = th_data.DataLoader(dataset=train_imgs, batch_size=self.cfg.batch_size, shuffle=True)
         test_data = th_data.DataLoader(dataset=test_imgs, batch_size=self.cfg.batch_size, shuffle=False)
         test_list = list(test_imgs)
+        state = self.reset_get_state()
+        test_x = th.tensor(state['image']).to(self.cfg.device).unsqueeze(0)
 
         for epoch in tqdm(range(self.cfg.nepochs)):
             train_loss = []
@@ -125,9 +125,8 @@ class FEExecuter(Executer):
             self.writer.add_scalar('train/loss', train_loss, epoch+1)
             self.writer.add_scalar('test/loss', test_loss, epoch+1)
             if check_freq(self.cfg.nepochs, epoch, self.cfg.save_recimg_num):
-                x = th.tensor(random.choice(test_list)).to(self.cfg.device).unsqueeze(0)
-                _, y = self.cfg.fe.model.forward(x, return_pred=True)
-                x = x.squeeze()
+                _, y = self.cfg.fe.model.forward(test_x, return_pred=True)
+                x = test_x.squeeze()
                 y = y.squeeze()
                 self.writer.add_image('rgb/'+str(epoch+1)+'_original', x[:3], epoch+1)
                 self.writer.add_image('depth/'+str(epoch+1)+'_original', x[3:], epoch+1)
@@ -145,7 +144,7 @@ class CombExecuter(Executer):
     def __init__(self, env_name: str, cfg: CombConfig, options=None):
         super().__init__()
         gym_cable.register_robotics_envs()
-        self.env = gym.make(env_name, render_mode="rgb_array", max_episode_steps=cfg.nsteps, is_random=cfg.is_random)
+        self.env = gym.make(env_name, render_mode="rgb_array", max_episode_steps=cfg.nsteps, position_random=cfg.position_random, posture_random=cfg.posture_random)
         self.writer = SummaryWriter(log_dir=cfg.output_dir)
         self.act_space = gym.spaces.Box(
             low = self.env.action_space.low[:cfg.rl.act_dim],

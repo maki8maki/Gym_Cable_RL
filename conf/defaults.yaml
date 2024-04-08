@@ -9,7 +9,8 @@ hydra:
 
 memory_size: 10000
 nsteps: 100
-is_random: False
+position_random: False
+posture_random: False
 nepisodes: 5000
 nevalepisodes: 5
 update_every: 50

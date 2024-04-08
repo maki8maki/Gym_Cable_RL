@@ -46,7 +46,8 @@ class TrainFEConfig:
     basename: str
     log_name: dataclasses.InitVar[str] = 'grasp_rgbd'
     nsteps: int = dataclasses.field(default=100, repr=False)
-    is_random: bool = False
+    position_random: bool = False
+    posture_random: bool = False
     batch_size: int = 128
     nepochs = 500
     es_patience: int = 10
@@ -73,13 +74,17 @@ class TrainFEConfig:
             init = 'w-init'
         else:
             init = 'wo-init'
-        if self.is_random:
-            random = 'r'
+        if self.position_random:
+            position_random = 'r'
         else:
-            random = 's'
-        self.basename += f'_{random}_{init}'
-        self.data_name = f'{log_name}_{random}_{init}_{self.data_size}.npy'
-        self.fe.model_name = self.fe.model_name.replace('.pth', f'_{random}_{init}.pth')
+            position_random = 's'
+        if self.posture_random:
+            posture_random = 'r'
+        else:
+            posture_random = 's'
+        self.basename += f'_{position_random}{posture_random}_{init}'
+        self.data_name = f'{log_name}_{position_random}{posture_random}_{init}_{self.data_size}.npy'
+        self.fe.model_name = self.fe.model_name.replace('.pth', f'_{position_random}{posture_random}_{init}.pth')
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
     
     @classmethod
@@ -112,7 +117,8 @@ class CombConfig:
     rl: RLConfig
     basename: str
     nsteps: int = dataclasses.field(default=100, repr=False)
-    is_random: bool = False
+    position_random: bool = False
+    posture_random: bool = False
     memory_size: int = 10000
     nepisodes: int = 5000
     nevalepisodes: int = dataclasses.field(default=5, repr=False)
@@ -144,12 +150,16 @@ class CombConfig:
             init = 'w-init'
         else:
             init = 'wo-init'
-        if self.is_random:
-            random = 'r'
+        if self.position_random:
+            position_random = 'r'
         else:
-            random = 's'
-        self.buffer_name = f'buffer_o-{self.rl.obs_dim}_a-{self.rl.act_dim}_{random}_w-hs_{self.memory_size}.pcl'
-        self.fe.model_name = self.fe.model_name.replace('.pth', f'_{random}_{init}.pth')
+            position_random = 's'
+        if self.posture_random:
+            posture_random = 'r'
+        else:
+            posture_random = 's'
+        self.buffer_name = f'buffer_o-{self.rl.obs_dim}_a-{self.rl.act_dim}_{position_random}{posture_random}_w-hs_{self.memory_size}.pcl'
+        self.fe.model_name = self.fe.model_name.replace('.pth', f'_{position_random}{posture_random}_{init}.pth')
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
     @classmethod
@@ -161,7 +171,7 @@ class CombConfig:
         cfg.rl = cfg.rl.convert(OmegaConf.create(_cfg.rl))
         cfg.fe.model.to(cfg.device)
         cfg.rl.model.to(cfg.device)
-        cfg.basename = _cfg.basename + ('_r' if cfg.is_random else '_s')
+        cfg.basename = _cfg.basename + ('_r' if cfg.position_random else '_s') + ('r' if cfg.posture_random else 's')
         cfg.replay_buffer = hydra.utils.instantiate(_cfg._replay_buffer)
         return cfg
 
@@ -188,7 +198,8 @@ class PPOConfig:
     rl: PPORLConfig
     basename: str
     nsteps: int = dataclasses.field(default=100, repr=False)
-    is_random: bool = False
+    position_random: bool = False
+    posture_random: bool = False
     nepochs: int = 5000
     nevalepisodes: int = dataclasses.field(default=5, repr=False)
     batch_size: int = 50
@@ -215,11 +226,15 @@ class PPOConfig:
             init = 'w-init'
         else:
             init = 'wo-init'
-        if self.is_random:
-            random = 'r'
+        if self.position_random:
+            position_random = 'r'
         else:
-            random = 's'
-        self.fe.model_name = self.fe.model_name.replace('.pth', f'_{random}_{init}.pth')
+            position_random = 's'
+        if self.posture_random:
+            posture_random = 'r'
+        else:
+            posture_random = 's'
+        self.fe.model_name = self.fe.model_name.replace('.pth', f'_{position_random}{posture_random}_{init}.pth')
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
     @classmethod

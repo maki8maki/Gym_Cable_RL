@@ -41,7 +41,7 @@ def calc_err_norm(cur, goal):
     position_err = goal_distance(cur[:3], goal[:3])
     err_rot_quat = rotations.subtract_eular2quat(cur[3:], goal[3:])
     _, posture_err = rotations.quat2axisangle(err_rot_quat)
-    return position_err, posture_err
+    return position_err, abs(posture_err)
 
 def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=None, joint_names=None,
                         tol=1e-14, rot_weight=1.0, regularization_threshold=0.1, regularization_strength=3e-2,
