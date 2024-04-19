@@ -1,5 +1,6 @@
-import numpy as np
 from typing import Optional
+
+import numpy as np
 
 from gym_cable.envs.robot_env import MujocoRobotEnv
 from gym_cable.utils import rotations
@@ -30,7 +31,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             distance_threshold,
             rotation_threshold,
             rot_weight,
-            **kwargs
+            **kwargs,
         ):
             """Initializes a new MZ04 environment.
 
@@ -68,7 +69,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
                 err_norm = position_err + posture_err * self.rot_weight
                 reward = -err_norm
             return reward
-        
+
         def reset(
             self,
             *,
@@ -79,12 +80,14 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             if options is not None:
                 try:
                     r = 1 - options["diff_ratio"]
-                    assert(0 <= r and r <= 1)
-                    pos_c, quat_c = obs['observation'][:3], rotations.euler2quat(obs['observation'][3:])
+                    assert 0 <= r and r <= 1
+                    pos_c, quat_c = obs["observation"][:3], rotations.euler2quat(obs["observation"][3:])
                     pos_g, quat_g = self.goal[:3], rotations.euler2quat(self.goal[3:])
                     pos_t = (1 - r) * pos_c + r * pos_g
                     quat_t = rotations.quat_slerp(quat_c, quat_g, r)
-                    _ = self._utils.set_site_to_xpos(self.model, self.data, self.site_name, self.joint_names, pos_t, quat_t)
+                    _ = self._utils.set_site_to_xpos(
+                        self.model, self.data, self.site_name, self.joint_names, pos_t, quat_t
+                    )
                 except Exception as e:
                     print(e)
             obs = self._get_obs()
@@ -98,11 +101,11 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
 
         def _set_action(self, action):
             assert action.shape == (6,)
-            action = action.copy() # ensure that we don't change the action outside of this scope
+            action = action.copy()  # ensure that we don't change the action outside of this scope
             pos_ctrl, rot_ctrl = action[:3], action[3:]
-            
-            pos_ctrl *= 0.05 # limit maximum change in position
-            rot_ctrl *= np.deg2rad(10) # limit maximum change in rotation
+
+            pos_ctrl *= 0.05  # limit maximum change in position
+            rot_ctrl *= np.deg2rad(10)  # limit maximum change in rotation
 
             quat_ctrl = rotations.euler2quat(rot_ctrl)
             action = np.concatenate([pos_ctrl, quat_ctrl])
@@ -114,11 +117,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
 
             obs = np.concatenate([ee_pos, ee_rot])
 
-            return {
-                "observation": obs.copy(),
-                "rgb_image": rgb_image.copy(),
-                "depth_image": depth_image.copy()
-            }
+            return {"observation": obs.copy(), "rgb_image": rgb_image.copy(), "depth_image": depth_image.copy()}
 
         def generate_mujoco_observations(self):
 
@@ -129,10 +128,10 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             raise NotImplementedError
 
         def _sample_goal(self):
-            cable_end_pos = self.data.body('B_last').xpos
-            cable_end_mat = self.data.body('B_last').xmat.reshape(3, 3)
+            cable_end_pos = self.data.body("B_last").xpos
+            cable_end_mat = self.data.body("B_last").xmat.reshape(3, 3)
             goal_pos = cable_end_pos + cable_end_mat.T @ self.target_offset
-            goal_rot = rotations.quat2euler(self.data.body('B_last').xquat)
+            goal_rot = rotations.quat2euler(self.data.body("B_last").xquat)
             return np.concatenate([goal_pos, goal_rot])
 
         def _is_success(self, obs, goal):
@@ -141,10 +140,11 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
 
     return BaseMZ04Env
 
+
 class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
     def __init__(self, site_name, joint_names, default_camera_config: dict = DEFAULT_CAMERA_CONFIG, **kwargs):
         super().__init__(default_camera_config=default_camera_config, **kwargs)
-        
+
         self.site_name = site_name
         self.joint_names = joint_names
 
@@ -163,7 +163,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         ee_rot = rotations.mat2euler(self._utils.get_site_xmat(self.model, self.data, "robot:end_effector"))
 
         # RGB and Depth images
-        rgb_image =  self.mujoco_renderer.render(render_mode="rgb_array", camera_name="robot:camera")
+        rgb_image = self.mujoco_renderer.render(render_mode="rgb_array", camera_name="robot:camera")
         depth_image = self.mujoco_renderer.render(render_mode="depth_array", camera_name="robot:camera")
 
         # Get the distances to the near and far clipping planes.
@@ -175,7 +175,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         # http://stackoverflow.com/a/6657284/1461210
         # https://www.khronos.org/opengl/wiki/Depth_Buffer_Precision
         depth_image = near / (1 - depth_image * (1 - near / far))
-        
+
         # Set pixel values outside the range to 0
         depth_image[(depth_image < self.depth_range[0]) | (depth_image > self.depth_range[1])] = 0
 
@@ -183,7 +183,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
 
     def _render_callback(self):
         self._mujoco.mj_forward(self.model, self.data)
-        
+
     def _reset_sim(self):
         self.data.time = self.initial_time
         self.data.qpos[:] = np.copy(self.initial_qpos)
@@ -201,7 +201,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
             self.model.body("B_first").pos[1] += diff
         if self.posture_random:
             diff = self.np_random.uniform(0, self.obj_posture_range)
-            self.model.body('B_10').quat = rotations.euler2quat(np.deg2rad(np.array([0, diff-90, 0])))
+            self.model.body("B_10").quat = rotations.euler2quat(np.deg2rad(np.array([0, diff - 90, 0])))
 
         self._mujoco.mj_forward(self.model, self.data)
         return True
@@ -210,7 +210,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         for name, value in initial_qpos.items():
             self._utils.set_joint_qpos(self.model, self.data, name, value)
         self._mujoco.mj_forward(self.model, self.data)
-    
+
     def set_threshold(self, distance_threshold=None, rotation_threshold=None):
         if distance_threshold is not None:
             self.distance_threshold = distance_threshold

@@ -18,6 +18,7 @@ else:
 
 DEFAULT_SIZE = 480
 
+
 class BaseRobotEnv(GoalEnv):
     """Superclass for all MuJoCo fetch and hand robotic environments."""
 
@@ -41,30 +42,17 @@ class BaseRobotEnv(GoalEnv):
         width: int = DEFAULT_SIZE,
         height: int = DEFAULT_SIZE,
     ):
-        """Initialize the hand and fetch robot superclass.
-
-        Args:
-            model_path (string): the path to the mjcf MuJoCo model.
-            initial_qpos (dict): initial position value of the joints in the MuJoCo simulation.
-            n_actions (integer): size of the action space.
-            n_substeps (integer): number of MuJoCo simulation timesteps per Gymnasium step.
-            render_mode (optional string): type of rendering mode, "human" for window rendeirng and "rgb_array" for offscreen. Defaults to None.
-            width (optional integer): width of each rendered frame. Defaults to DEFAULT_SIZE.
-            height (optional integer): height of each rendered frame . Defaults to DEFAULT_SIZE.
-        """
         if model_path.startswith("/"):
             self.fullpath = model_path
         else:
-            self.fullpath = os.path.join(
-                os.path.dirname(__file__), "assets", model_path
-            )
+            self.fullpath = os.path.join(os.path.dirname(__file__), "assets", model_path)
         if not os.path.exists(self.fullpath):
             raise OSError(f"File {self.fullpath} does not exist")
 
         self.n_substeps = n_substeps
 
         self.initial_qpos = initial_qpos
-        
+
         self.depth_range = np.array([depth_min, depth_max])
 
         self.width = width
@@ -83,7 +71,7 @@ class BaseRobotEnv(GoalEnv):
             dict(
                 observation=spaces.Box(-np.inf, np.inf, shape=obs["observation"].shape, dtype="float64"),
                 rgb_image=spaces.Box(0, 255, shape=obs["rgb_image"].shape, dtype="uint8"),
-                depth_image=spaces.Box(0, self.depth_range[1], shape=obs["depth_image"].shape, dtype="float32")
+                depth_image=spaces.Box(0, self.depth_range[1], shape=obs["depth_image"].shape, dtype="float32"),
             )
         )
 
@@ -92,30 +80,17 @@ class BaseRobotEnv(GoalEnv):
     # Env methods
     # ----------------------------
     def compute_terminated(self, obs, goal, info):
-        return info['is_success'] and not(self.truncated)
+        return info["is_success"] and not (self.truncated)
 
     def compute_truncated(self, obs, goal, info):
-        info['ik_success'] = self.ik_success
-        info['contacted'] = (self.data.ncon > 10)
+        info["ik_success"] = self.ik_success
+        info["contacted"] = self.data.ncon > 10
         position_err, posture_err = self._utils.calc_err_norm(obs, goal)
         is_far = (position_err > 0.2) or (posture_err > np.deg2rad(30))
-        info['is_far'] = is_far
-        return (not info['ik_success']) or info['contacted'] or info['is_far']
+        info["is_far"] = is_far
+        return (not info["ik_success"]) or info["contacted"] or info["is_far"]
 
     def step(self, action):
-        """Run one timestep of the environment's dynamics using the agent actions.
-
-        Args:
-            action (np.ndarray): Control action to be applied to the agent and update the simulation. Should be of shape :attr:`action_space`.
-
-        Returns:
-            observation (dictionary): Next observation due to the agent actions .It should satisfy the `GoalEnv` :attr:`observation_space`.
-            reward (integer): The reward as a result of taking the action. This is calculated by :meth:`compute_reward` of `GoalEnv`.
-            terminated (boolean): Whether the agent reaches the terminal state. This is calculated by :meth:`compute_terminated` of `GoalEnv`.
-            truncated (boolean): Whether the truncation condition outside the scope of the MDP is satisfied. Timically, due to a timelimit, but
-            it is also calculated in :meth:`compute_truncated` of `GoalEnv`.
-            info (dictionary): Contains auxiliary diagnostic information (helpful for debugging, learning, and logging).
-        """
         if np.array(action).shape != self.action_space.shape:
             raise ValueError("Action dimension mismatch")
 
@@ -147,23 +122,6 @@ class BaseRobotEnv(GoalEnv):
         seed: Optional[int] = None,
         options: Optional[dict] = None,
     ):
-        """Reset MuJoCo simulation to initial state.
-
-        Note: Attempt to reset the simulator. Since we randomize initial conditions, it
-        is possible to get into a state with numerical issues (e.g. due to penetration or
-        Gimbel lock) or we may not achieve an initial condition (e.g. an object is within the hand).
-        In this case, we just keep randomizing until we eventually achieve a valid initial
-        configuration.
-
-        Args:
-            seed (optional integer): The seed that is used to initialize the environment's PRNG (`np_random`). Defaults to None.
-            options (optional dictionary): Can be used when `reset` is override for additional information to specify how the environment is reset.
-
-        Returns:
-            observation (dictionary) : Observation of the initial state. It should satisfy the `GoalEnv` :attr:`observation_space`.
-            info (dictionary): This dictionary contains auxiliary information complementing ``observation``. It should be analogous to
-                the ``info`` returned by :meth:`step`.
-        """
         super().reset(seed=seed)
         did_reset_sim = False
         while not did_reset_sim:
@@ -239,34 +197,12 @@ class MujocoRobotEnv(BaseRobotEnv):
     """Robot base class for fetch and hand environment versions that depend on new mujoco bindings from Deepmind."""
 
     def __init__(self, default_camera_config: Optional[dict] = None, **kwargs):
-        """Initialize mujoco environment.
-
-        The Deepmind mujoco bindings are initialized alongside the respective mujoco_utils.
-
-        Args:
-            default_camera_config (optional dictionary): dictionary of default mujoco camera parameters for human rendering. Defaults to None.
-            The keys for this dictionary can be found in the mujoco mjvCamera struct:
-            https://mujoco.readthedocs.io/en/latest/APIreference.html?highlight=azimuth#mjvcamera.
-
-                - "type" (integer): camera type (mjtCamera)
-                - "fixedcamid" (integer): fixed camera id
-                - "trackbodyid": body id to track
-                - "lookat" (np.ndarray): cartesian (x, y, z) lookat point
-                - "distance" (float): distance to lookat point or tracked body
-                - "azimuth" (float): camera azimuth (deg)
-                - "elevation" (float): camera elevation (deg)
-
-        Raises:
-            error.DependencyNotInstalled: if mujoco bindings are not installed. Install with `pip install mujoco`
-        """
         if MUJOCO_IMPORT_ERROR is not None:
-            raise error.DependencyNotInstalled(
-                f"{MUJOCO_IMPORT_ERROR}. (HINT: you need to install mujoco)"
-            )
+            raise error.DependencyNotInstalled(f"{MUJOCO_IMPORT_ERROR}. (HINT: you need to install mujoco)")
 
         self._mujoco = mujoco
         self._utils = mujoco_utils
-        
+
         self.default_camera_config = default_camera_config
 
         super().__init__(**kwargs)
@@ -285,7 +221,7 @@ class MujocoRobotEnv(BaseRobotEnv):
         self.initial_qvel = np.copy(self.data.qvel)
         self.initial_circuit_pos = self._utils.get_joint_qpos(self.model, self.data, "circuit:joint")
         self.initial_cable_pos = np.copy(self.model.body("B_first").pos)
-        
+
         self.mujoco_renderer = MujocoRenderer(self.model, self.data, self.default_camera_config)
 
     def _reset_sim(self):

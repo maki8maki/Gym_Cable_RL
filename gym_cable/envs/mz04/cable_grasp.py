@@ -1,8 +1,9 @@
 import os
-import numpy as np
 
 import gymnasium as gym
+import numpy as np
 from gymnasium.utils.ezpickle import EzPickle
+
 from gym_cable.envs.mz04.mz04_env import MujocoMZ04Env
 
 # Ensure we get the path separator correct on windows
@@ -33,17 +34,23 @@ class MujocoMZ04CableGraspEnv(MujocoMZ04Env, EzPickle):
             width=1080,
             height=720,
             site_name="robot:end_effector",
-            joint_names=np.array([
-                "robot:j1_joint",
-                "robot:j2_joint",
-                "robot:j3_joint",
-                "robot:j4_joint",
-                "robot:j5_joint",
-                "robot:j6_joint"
-                ]),
+            joint_names=np.array(
+                [
+                    "robot:j1_joint",
+                    "robot:j2_joint",
+                    "robot:j3_joint",
+                    "robot:j4_joint",
+                    "robot:j5_joint",
+                    "robot:j6_joint",
+                ]
+            ),
             **kwargs,
         )
         EzPickle.__init__(self, **kwargs)
-        
+
         # 観測範囲を限定
-        self.observation_space["observation"] = gym.spaces.Box(low=np.array([-0.0, -1.0, -0.0, -np.pi, -np.pi, -np.pi]), high=np.array([2.0, 1.0, 2.0, np.pi, np.pi, np.pi]), dtype='float64')
+        self.observation_space["observation"] = gym.spaces.Box(
+            low=np.array([-0.0, -1.0, -0.0, -np.pi, -np.pi, -np.pi]),
+            high=np.array([2.0, 1.0, 2.0, np.pi, np.pi, np.pi]),
+            dtype="float64",
+        )

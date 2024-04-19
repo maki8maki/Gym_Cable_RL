@@ -1,11 +1,13 @@
-import matplotlib.pyplot as plt
 from pathlib import Path
-from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+
+import matplotlib.pyplot as plt
 import numpy as np
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+
 
 def plot(log_dir, tagname=None, title=None, xlabel=None, ylabel=None):
     log_files = [path for path in Path(log_dir).glob("**/*") if path.is_file()]
-    
+
     for log_file in log_files:
         event = EventAccumulator(str(log_file))
         event.Reload()
@@ -37,7 +39,8 @@ def plot(log_dir, tagname=None, title=None, xlabel=None, ylabel=None):
             plt.tight_layout()
             plt.show()
 
-if __name__ == '__main__':
-    log_dir = 'logs/SAC_w-TrainedDCAE/20231227-1913_xyz'
-    tagname = 'test/reward'
-    plot(log_dir, tagname, title='', xlabel='episode', ylabel='rewards')
+
+if __name__ == "__main__":
+    log_dir = "logs/SAC_w-TrainedDCAE/20231227-1913_xyz"
+    tagname = "test/reward"
+    plot(log_dir, tagname, title="", xlabel="episode", ylabel="rewards")

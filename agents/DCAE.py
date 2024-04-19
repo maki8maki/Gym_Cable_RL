@@ -2,17 +2,29 @@ import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from agents.utils import size_after_conv, size_after_pooling, Reshape, FE
+
+from agents.utils import FE, Reshape, size_after_conv, size_after_pooling
+
 
 class DCAE(FE):
-    def __init__(self, img_height, img_width, img_channel, hidden_dim, lr=1e-3, net_activation=nn.ReLU(inplace=True), hidden_activation=F.tanh, loss_func=F.mse_loss) -> None:
+    def __init__(
+        self,
+        img_height,
+        img_width,
+        img_channel,
+        hidden_dim,
+        lr=1e-3,
+        net_activation=nn.ReLU(inplace=True),
+        hidden_activation=F.tanh,
+        loss_func=F.mse_loss,
+    ) -> None:
         super().__init__()
         channels = [img_channel, 32, 64, 128, 256]
         after_height = img_height
         after_width = img_width
         ksize = 3
         pooling_size = 2
-        for _ in range(len(channels)-1):
+        for _ in range(len(channels) - 1):
             after_height = size_after_conv(after_height, ksize=ksize)
             after_height = size_after_pooling(after_height, pooling_size)
             after_width = size_after_conv(after_width, ksize=ksize)
@@ -64,13 +76,13 @@ class DCAE(FE):
             nn.Upsample(scale_factor=pooling_size),
             nn.ConvTranspose2d(in_channels=channels[1], out_channels=channels[0], kernel_size=ksize),
             nn.Sigmoid(),
-            nn.Upsample(size=(img_height, img_width))
+            nn.Upsample(size=(img_height, img_width)),
         )
         self.net_activation = net_activation
         self.hidden_activation = hidden_activation
         self.optim = optim.Adam(self.parameters(), lr=lr)
         self.loss_func = loss_func
-    
+
     def forward(self, x: th.Tensor, return_pred: bool = False):
         h = self.encoder(x)
         if not return_pred:
@@ -78,8 +90,7 @@ class DCAE(FE):
         else:
             x_pred = self.decoder(self.net_activation(h))
             return h, x_pred
-    
+
     def loss(self, x: th.Tensor) -> th.Tensor:
         _, y = self.forward(x, return_pred=True)
         return self.loss_func(y, x)
-    

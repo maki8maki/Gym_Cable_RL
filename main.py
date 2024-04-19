@@ -1,27 +1,27 @@
-import matplotlib.pyplot as plt
-import torch
-import cv2
-import os
 import json
-import numpy as np
+import os
 from datetime import datetime
-from absl import logging
-from tqdm import tqdm
-from torch.utils.tensorboard import SummaryWriter
-from gymnasium import spaces
+
+import cv2
 import gymnasium as gym
+import numpy as np
+import torch
+from absl import logging
+from gymnasium import spaces
+from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
+
 import gym_cable
-
-from utils import set_seed, anim, obs2state, return_transition, yes_no_input
 from agents.comb import DCAE_SAC
+from utils import anim, obs2state, return_transition, set_seed, yes_no_input
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     seed = 42
     set_seed(seed)
-    
+
     if not yes_no_input("logdir for tensorboard and filename of animation and model parameters"):
         exit()
-    
+
     pwd = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(pwd, "params.json"), "r") as f:
         data = json.load(f)
@@ -31,13 +31,13 @@ if __name__ == '__main__':
     img_width = data["img_width"]
     img_height = data["img_height"]
     ntestepisodes = data["ntestepisodes"]
-    
+
     if torch.cuda.is_available():
         device = "cuda"
     else:
         device = "cpu"
         logging.warning("You are using CPU!!")
-    
+
     gym_cable.register_robotics_envs()
     env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", max_episode_steps=nsteps)
     action_space = spaces.Box(-1.0, 1.0, shape=(1,), dtype="float32")
@@ -55,14 +55,16 @@ if __name__ == '__main__':
             "batch_size": data["batch_size"],
             "lr": data["lr"],
         },
-        "device": device
+        "device": device,
     }
-    
+
     agent = DCAE_SAC(config)
-    trans = lambda img: cv2.resize(img, (img_width, img_height)) * 0.5 + 0.5
-    
+
+    def trans(img):
+        return cv2.resize(img, (img_width, img_height)).transpose(2, 0, 1) * 0.5 + 0.5
+
     now = datetime.now()
-    writer = SummaryWriter(log_dir='./logs/DCAE_SAC/'+now.strftime('%Y%m%d-%H%M'))
+    writer = SummaryWriter(log_dir="./logs/DCAE_SAC/" + now.strftime("%Y%m%d-%H%M"))
 
     obs, _ = env.reset(seed=seed)
     # frames = [env.render()]
@@ -115,11 +117,13 @@ if __name__ == '__main__':
             else:
                 obs = next_obs
         episode_rewards.append(episode_reward)
-        writer.add_scalar('train/reward', episode_reward, episode+1)
-        writer.add_scalar('train/step', step, episode+1)
-        if (episode+1) % (nepisodes/10) == 0:
-            tqdm.write("Episode %d finished when step %d | Episode reward %f" % (episode+1, step+1, episode_reward))
-        if (episode+1) % (nepisodes/50) == 0:
+        writer.add_scalar("train/reward", episode_reward, episode + 1)
+        writer.add_scalar("train/step", step, episode + 1)
+        if (episode + 1) % (nepisodes / 10) == 0:
+            tqdm.write(
+                "Episode %d finished when step %d | Episode reward %f" % (episode + 1, step + 1, episode_reward)
+            )
+        if (episode + 1) % (nepisodes / 50) == 0:
             # Test
             agent.eval()
             test_reward = 0
@@ -138,11 +142,11 @@ if __name__ == '__main__':
                         obs = next_obs
                 steps += step
             test_episodes.append(episode)
-            test_rewards.append(test_reward/ntestepisodes)
-            writer.add_scalar('test/reward', test_reward/ntestepisodes, episode+1)
-            writer.add_scalar('test/step', steps/ntestepisodes, episode+1)
+            test_rewards.append(test_reward / ntestepisodes)
+            writer.add_scalar("test/reward", test_reward / ntestepisodes, episode + 1)
+            writer.add_scalar("test/step", steps / ntestepisodes, episode + 1)
             agent.train()
-    
+
     agent.eval()
     obs, _ = env.reset()
     for step in range(nsteps):
@@ -154,11 +158,11 @@ if __name__ == '__main__':
         else:
             obs = next_obs
         frames.append(env.render())
-        titles.append("Step "+str(step+1))
-    
+        titles.append("Step " + str(step + 1))
+
     anim(frames, titles=titles, filename="out/test_1deg-action.mp4")
     agent.save("model/test_1deg-action.pth")
-    
+
     env.close()
     writer.flush()
     writer.close()
