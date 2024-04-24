@@ -1,10 +1,10 @@
+import collections
+from copy import deepcopy
 from typing import Dict, Tuple, Union
 
 import numpy as np
-from gymnasium import error
-import collections
 from absl import logging
-from copy import deepcopy
+from gymnasium import error
 
 from . import rotations
 
@@ -24,16 +24,18 @@ MJ_OBJ_TYPES = [
     "mjOBJ_SENSOR",
 ]
 
-_INVALID_JOINT_NAMES_TYPE = ('`joint_names` must be either None, a list, a tuple, or a numpy array; got {}.')
-_REQUIRE_TARGET_POS_OR_QUAT = ('At least one of `target_pos` or `target_quat` must be specified.')
+_INVALID_JOINT_NAMES_TYPE = "`joint_names` must be either None, a list, a tuple, or a numpy array; got {}."
+_REQUIRE_TARGET_POS_OR_QUAT = "At least one of `target_pos` or `target_quat` must be specified."
 
-IKResult = collections.namedtuple('IKResult', ['qpos', 'err_norm', 'steps', 'success'])
+IKResult = collections.namedtuple("IKResult", ["qpos", "err_norm", "steps", "success"])
 
-DOWN_QUATERNION = np.array([0., 0.70710678118, 0.70710678118, 0.])
+DOWN_QUATERNION = np.array([0.0, 0.70710678118, 0.70710678118, 0.0])
+
 
 def goal_distance(goal_a, goal_b):
     assert goal_a.shape == goal_b.shape
     return np.linalg.norm(goal_a - goal_b, axis=-1)
+
 
 def calc_err_norm(cur, goal):
     assert cur.shape == goal.shape
@@ -43,9 +45,23 @@ def calc_err_norm(cur, goal):
     _, posture_err = rotations.quat2axisangle(err_rot_quat)
     return position_err, abs(posture_err)
 
-def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=None, joint_names=None,
-                        tol=1e-14, rot_weight=1.0, regularization_threshold=0.1, regularization_strength=3e-2,
-                        max_update_norm=2.0, progress_thresh=20.0, max_steps=100, inplace=False):
+
+def qpos_from_site_pose(
+    model,
+    data,
+    site_name,
+    target_pos=None,
+    target_quat=None,
+    joint_names=None,
+    tol=1e-14,
+    rot_weight=1.0,
+    regularization_threshold=0.1,
+    regularization_strength=3e-2,
+    max_update_norm=2.0,
+    progress_thresh=20.0,
+    max_steps=100,
+    inplace=False,
+):
     """Find joint positions that satisfy a target site position and/or rotation.
     Borrowed from google-deepmind/dm_control (https://github.com/google-deepmind/dm_control.git).
 
@@ -120,7 +136,7 @@ def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=Non
         site_xquat = np.empty(4, dtype=dtype)
         neg_site_xquat = np.empty(4, dtype=dtype)
         err_rot_quat = np.empty(4, dtype=dtype)
-    
+
     if not inplace:
         data = deepcopy(data)
 
@@ -173,7 +189,7 @@ def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=Non
             err_norm += np.linalg.norm(err_rot) * rot_weight
 
         if err_norm < tol:
-            logging.debug('Converged after %i steps: err_norm=%3g', steps, err_norm)
+            logging.debug("Converged after %i steps: err_norm=%3g", steps, err_norm)
             success = True
             break
         else:
@@ -182,7 +198,7 @@ def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=Non
             jac_joints = jac[:, dof_indices]
 
             # TODO(b/112141592): This does not take joint limits into consideration.
-            reg_strength = (regularization_strength if err_norm > regularization_threshold else 0.0)
+            reg_strength = regularization_strength if err_norm > regularization_threshold else 0.0
             update_joints = nullspace_method(jac_joints, err, regularization_strength=reg_strength)
 
             update_norm = np.linalg.norm(update_joints)
@@ -190,8 +206,12 @@ def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=Non
             # Check whether we are still making enough progress, and halt if not.
             progress_criterion = err_norm / update_norm
             if progress_criterion > progress_thresh:
-                logging.debug('Step %2i: err_norm / update_norm (%3g) > tolerance (%3g). Halting due to insufficient progress',
-                            steps, progress_criterion, progress_thresh)
+                logging.debug(
+                    "Step %2i: err_norm / update_norm (%3g) > tolerance (%3g). Halting due to insufficient progress",
+                    steps,
+                    progress_criterion,
+                    progress_thresh,
+                )
                 break
 
             if update_norm > max_update_norm:
@@ -206,10 +226,10 @@ def qpos_from_site_pose(model, data, site_name, target_pos=None, target_quat=Non
             # Compute the new Cartesian position of the site.
             mujoco.mj_fwdPosition(model, data)
 
-            logging.debug('Step %2i: err_norm=%-10.3g update_norm=%-10.3g', steps, err_norm, update_norm)
+            logging.debug("Step %2i: err_norm=%-10.3g update_norm=%-10.3g", steps, err_norm, update_norm)
 
     if not success and steps == max_steps - 1:
-        logging.debug('Failed to converge after %i steps: err_norm=%3g', steps, err_norm)
+        logging.debug("Failed to converge after %i steps: err_norm=%3g", steps, err_norm)
 
     if not inplace:
         # Our temporary copy of data is about to go out of scope, and when
@@ -254,8 +274,16 @@ def nullspace_method(jac_joints, delta, regularization_strength=0.0):
         return np.linalg.lstsq(hess_approx, joint_delta, rcond=-1)[0]
 
 
-def set_site_to_xpos(model, data, site, joint_names, target_pos, target_quat=None, max_ik_attempts=10,
-                     random_state=np.random.RandomState(0)):
+def set_site_to_xpos(
+    model,
+    data,
+    site,
+    joint_names,
+    target_pos,
+    target_quat=None,
+    max_ik_attempts=10,
+    random_state=np.random.RandomState(0),
+):
     """Moves the arm so that a site occurs at the specified location.
 
     This function runs the inverse kinematics solver to find a configuration
@@ -266,7 +294,7 @@ def set_site_to_xpos(model, data, site, joint_names, target_pos, target_quat=Non
         model: A `mujoco.MjModel` instance.
         data: A `mujoco.MjData` instance.
         site: A string specifying the full name of the site whose position is being set.
-        joint_names: A list, tuple or numpy array specifying the names of one or more 
+        joint_names: A list, tuple or numpy array specifying the names of one or more
             joints that can be manipulated in order to achieve the target site pose.
         target_pos: The desired Cartesian location of the site.
         target_quat: (optional) The desired orientation of the site, expressed
@@ -286,23 +314,33 @@ def set_site_to_xpos(model, data, site, joint_names, target_pos, target_quat=Non
     if isinstance(site, str):
         site_name = site
     else:
-        raise ValueError('site should either be a string: got {}'.format(site))
-    
+        raise ValueError("site should either be a string: got {}".format(site))
+
     if target_quat is None:
         target_quat = DOWN_QUATERNION
-    
+
     joint_ranges = np.array([model.joint(joint_name).range for joint_name in joint_names])
 
     for _ in range(max_ik_attempts):
-        result = qpos_from_site_pose(model=model, data=data, site_name=site_name, target_pos=target_pos, target_quat=target_quat,
-                                     joint_names=joint_names, rot_weight=2, inplace=True)
+        result = qpos_from_site_pose(
+            model=model,
+            data=data,
+            site_name=site_name,
+            target_pos=target_pos,
+            target_quat=target_quat,
+            joint_names=joint_names,
+            rot_weight=2,
+            inplace=True,
+        )
         success = result.success
 
         # Canonicalise the angle to [-pi, pi]
         if success:
             joints_qpos, _, _ = robot_get_obs(model, data, joint_names)
             normalize_joints_qpos = rotations.normalize_angles(joints_qpos)
-            if (normalize_joints_qpos < joint_ranges[:, 0]).any() or (normalize_joints_qpos > joint_ranges[:, 1]).any():
+            if (normalize_joints_qpos < joint_ranges[:, 0]).any() or (
+                normalize_joints_qpos > joint_ranges[:, 1]
+            ).any():
                 success = False
             else:
                 for joint_name, qpos in zip(joint_names, normalize_joints_qpos):
@@ -314,7 +352,7 @@ def set_site_to_xpos(model, data, site, joint_names, target_pos, target_quat=Non
         else:
             for joint_name, joint_range in zip(joint_names, joint_ranges):
                 set_joint_qpos(model, data, joint_name, random_state.uniform(joint_range[0], joint_range[1]))
-        
+
         mujoco.mj_fwdPosition(model, data)
 
     return success
@@ -396,9 +434,7 @@ def reset_mocap2body_xpos(model, data):
 
     if model.eq_type is None or model.eq_obj1id is None or model.eq_obj2id is None:
         return
-    for eq_type, obj1_id, obj2_id in zip(
-        model.eq_type, model.eq_obj1id, model.eq_obj2id
-    ):
+    for eq_type, obj1_id, obj2_id in zip(model.eq_type, model.eq_obj1id, model.eq_obj2id):
         if eq_type != mujoco.mjtEq.mjEQ_WELD:
             continue
 
@@ -454,9 +490,7 @@ def set_joint_qpos(model, data, name, value):
     end_idx = joint_addr + ndim
     value = np.array(value)
     if ndim > 1:
-        assert value.shape == (
-            end_idx - start_idx
-        ), f"Value has incorrect shape {name}: {value}"
+        assert value.shape == (end_idx - start_idx), f"Value has incorrect shape {name}: {value}"
     data.qpos[start_idx:end_idx] = value
 
 
@@ -478,9 +512,7 @@ def set_joint_qvel(model, data, name, value):
     end_idx = joint_addr + ndim
     value = np.array(value)
     if ndim > 1:
-        assert value.shape == (
-            end_idx - start_idx
-        ), f"Value has incorrect shape {name}: {value}"
+        assert value.shape == (end_idx - start_idx), f"Value has incorrect shape {name}: {value}"
     data.qvel[start_idx:end_idx] = value
 
 
@@ -502,9 +534,7 @@ def set_joint_qacc(model, data, name, value):
     end_idx = joint_addr + ndim
     value = np.array(value)
     if ndim > 1:
-        assert value.shape == (
-            end_idx - start_idx
-        ), f"Value has incorrect shape {name}: {value}"
+        assert value.shape == (end_idx - start_idx), f"Value has incorrect shape {name}: {value}"
     data.qacc[start_idx:end_idx] = value
 
 
@@ -649,9 +679,8 @@ def extract_mj_names(
         n_obj = model.nmesh
     else:
         raise ValueError(
-            "`{}` was passed as the MuJoCo model object type. The MuJoCo model object type can only be of the following mjtObj enum types: {}.".format(
-                obj_type, MJ_OBJ_TYPES
-            )
+            f"`{obj_type}` was passed as the MuJoCo model object type."
+            + f" The MuJoCo model object type can only be of the following mjtObj enum types: {MJ_OBJ_TYPES}."
         )
 
     id2name = {i: None for i in range(n_obj)}

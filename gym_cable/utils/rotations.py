@@ -111,8 +111,7 @@ _EPS4 = _FLOAT_EPS * 4.0
 
 
 def euler2mat(euler):
-    """Convert Euler Angles to Rotation Matrix.
-    """
+    """Convert Euler Angles to Rotation Matrix."""
     euler = np.asarray(euler, dtype=np.float64)
     assert euler.shape[-1] == 3, f"Invalid shaped euler {euler}"
 
@@ -136,8 +135,7 @@ def euler2mat(euler):
 
 
 def euler2quat(euler):
-    """Convert Euler Angles to Quaternions.
-    """
+    """Convert Euler Angles to Quaternions."""
     euler = np.asarray(euler, dtype=np.float64)
     assert euler.shape[-1] == 3, f"Invalid shape euler {euler}"
 
@@ -156,8 +154,7 @@ def euler2quat(euler):
 
 
 def mat2euler(mat):
-    """Convert Rotation Matrix to Euler Angles.
-    """
+    """Convert Rotation Matrix to Euler Angles."""
     mat = np.asarray(mat, dtype=np.float64)
     assert mat.shape[-2:] == (3, 3), f"Invalid shape matrix {mat}"
 
@@ -169,18 +166,13 @@ def mat2euler(mat):
         -np.arctan2(mat[..., 0, 1], mat[..., 0, 0]),
         -np.arctan2(-mat[..., 1, 0], mat[..., 1, 1]),
     )
-    euler[..., 1] = np.where(
-        condition, -np.arctan2(-mat[..., 0, 2], cy), -np.arctan2(-mat[..., 0, 2], cy)
-    )
-    euler[..., 0] = np.where(
-        condition, -np.arctan2(mat[..., 1, 2], mat[..., 2, 2]), 0.0
-    )
+    euler[..., 1] = np.where(condition, -np.arctan2(-mat[..., 0, 2], cy), -np.arctan2(-mat[..., 0, 2], cy))
+    euler[..., 0] = np.where(condition, -np.arctan2(mat[..., 1, 2], mat[..., 2, 2]), 0.0)
     return euler
 
 
 def mat2quat(mat):
-    """Convert Rotation Matrix to Quaternion.
-    """
+    """Convert Rotation Matrix to Quaternion."""
     mat = np.asarray(mat, dtype=np.float64)
     assert mat.shape[-2:] == (3, 3), f"Invalid shape matrix {mat}"
 
@@ -217,8 +209,7 @@ def mat2quat(mat):
 
 
 def quat2euler(quat):
-    """Convert Quaternion to Euler Angles.
-    """
+    """Convert Quaternion to Euler Angles."""
     return mat2euler(quat2mat(quat))
 
 
@@ -227,7 +218,7 @@ def subtract_eular2quat(e1, e2):
     assert e1.shape[-1] == 3
     q1 = euler2quat(e1)
     q2 = euler2quat(e2)
-    return (quat_mul(q1, quat_conjugate(q2)))
+    return quat_mul(q1, quat_conjugate(q2))
 
 
 def subtract_euler(e1, e2):
@@ -242,8 +233,7 @@ def add_rot_mat(mat1, mat2):
 
 
 def quat2mat(quat):
-    """Convert Quaternion to Euler Angles.
-    """
+    """Convert Quaternion to Euler Angles."""
     quat = np.asarray(quat, dtype=np.float64)
     assert quat.shape[-1] == 4, f"Invalid shape quat {quat}"
 
@@ -318,7 +308,7 @@ def quat2axisangle(quat):
 
     if sin_theta > 0.0001:
         theta = 2 * np.arctan2(sin_theta, quat[0])
-        if (theta > np.pi):
+        if theta > np.pi:
             theta -= 2 * np.pi
         axis = quat[1:] / sin_theta
 
