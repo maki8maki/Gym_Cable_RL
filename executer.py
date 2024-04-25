@@ -108,7 +108,7 @@ class FEExecuter(Executer):
         train_data = th_data.DataLoader(dataset=train_imgs, batch_size=self.cfg.batch_size, shuffle=True)
         test_data = th_data.DataLoader(dataset=test_imgs, batch_size=self.cfg.batch_size, shuffle=False)
         state = self.reset_get_state()
-        test_x = th.tensor(state["image"]).to(self.cfg.device).unsqueeze(0)
+        test_x = th.tensor(state["image"]).to(self.cfg.device)
 
         for epoch in tqdm(range(self.cfg.nepochs)):
             train_loss = []
@@ -133,15 +133,19 @@ class FEExecuter(Executer):
             self.writer.add_scalar("train/loss", train_loss, epoch + 1)
             self.writer.add_scalar("test/loss", test_loss, epoch + 1)
             if check_freq(self.cfg.nepochs, epoch, self.cfg.save_recimg_num):
-                _, y = self.cfg.fe.model.forward(test_x, return_pred=True)
-                x = test_x.squeeze()
-                y = y.squeeze()
-                self.writer.add_image("rgb/" + str(epoch + 1) + "_original", x[:3], epoch + 1)
-                self.writer.add_image("depth/" + str(epoch + 1) + "_original", x[3:], epoch + 1)
+                y = self.test(test_x)
+                self.writer.add_image("rgb/" + str(epoch + 1) + "_original", test_x[:3], epoch + 1)
+                self.writer.add_image("depth/" + str(epoch + 1) + "_original", test_x[3:], epoch + 1)
                 self.writer.add_image("rgb/" + str(epoch + 1) + "_reconstructed", y[:3], epoch + 1)
                 self.writer.add_image("depth/" + str(epoch + 1) + "_reconstructed", y[3:], epoch + 1)
             if self.es(test_loss, self.cfg.fe.model):
                 break
+
+    def test(self, x: th.Tensor):
+        test_x = x.unsqueeze(0)
+        _, y = self.cfg.fe.model.forward(test_x, return_pred=True)
+        y = y.squeeze()
+        return y
 
     def __call__(self):
         self.gathering_data()
