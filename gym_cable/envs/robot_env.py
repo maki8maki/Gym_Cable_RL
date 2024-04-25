@@ -71,7 +71,7 @@ class BaseRobotEnv(GoalEnv):
             dict(
                 observation=spaces.Box(-np.inf, np.inf, shape=obs["observation"].shape, dtype="float64"),
                 rgb_image=spaces.Box(0, 255, shape=obs["rgb_image"].shape, dtype="uint8"),
-                depth_image=spaces.Box(0, self.depth_range[1], shape=obs["depth_image"].shape, dtype="float32"),
+                depth_image=spaces.Box(0, 255, shape=obs["depth_image"].shape, dtype="uint8"),
             )
         )
 
