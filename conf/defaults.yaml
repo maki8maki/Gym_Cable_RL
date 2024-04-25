@@ -23,7 +23,7 @@ _replay_buffer:
   _target_: agents.buffer.ReplayBuffer
   memory_size: ${memory_size}
 
-basename: SAC_trainedDCAE_cl2_o-${rl.obs_dim}_a-${rl.act_dim}
+basename: SAC_trainedDCAE_o-${rl.obs_dim}_a-${rl.act_dim}
 
 gathering_data: True
 
