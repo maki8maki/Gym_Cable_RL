@@ -15,3 +15,4 @@ PyOpenGL-accelerate
 torch-tb-profiler
 dill
 imageio
+PyQt6
