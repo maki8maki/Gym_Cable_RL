@@ -7,7 +7,7 @@
                 <geom type="mesh" contype="0" conaffinity="0" group="2"/>
             </default>
             <default class="end_effector">
-                <geom rgba="0 0 1 1"></geom>
+                <geom rgba="0 0 0 1"></geom>
             </default>
         </default>
         <default class="circuit">
@@ -30,6 +30,7 @@
         <mesh file="MZ04-01_J4.stl" name="robot:j4_link"></mesh>
         <mesh file="MZ04-01_J5.stl" name="robot:j5_link"></mesh>
         <mesh file="MZ04-01_J6.stl" name="robot:j6_link"></mesh>
+        <mesh file="EndEffector.stl" name="robot:end_effector"></mesh>
 
         <mesh file="MZ04-01_BASE.obj"></mesh>
         <mesh file="MZ04-01_J1.obj"></mesh>

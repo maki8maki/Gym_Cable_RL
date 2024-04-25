@@ -35,8 +35,16 @@
                                 <joint axis="1 0 0" name="robot:j6_joint" pos="0.35 0 0.625"></joint>
                                 <geom mesh="MZ04-01_J6" class="visual"></geom>
                                 <geom mesh="robot:j6_link" name="robot:j6_link"></geom>
-                                <body name="robot:end_effector_link" pos="0.38 0 0.59">
-                                    <body name="robot:camera" pos="0.03 0 0.09">
+                                <body name="robot:end_effector_link" pos="0.35 0 0.625">
+                                    <body name="robot:end_effector" pos="0.0114 0 0" euler="0 -1.57079633 0">
+                                        <geom mesh="robot:end_effector" rgba="0 0 0 1" pos="-0.03 -0.03 0" class="end_effector"></geom>
+                                        <camera name="robot:camera" pos="0.101 0 0.095" euler="0 0 -1.57079633" fovy="58"></camera>
+                                        <site name="robot:end_effector" pos="0.085 0 -0.039" rgba="1 0 1 0" size="0.002"></site>
+                                        <body name="robot:ee_adhesion" pos="0.085 0 -0.039">
+                                            <geom type="box" size="0.002 0.002 0.002" pos="0 0 0.002" class="end_effector"></geom>
+                                        </body>
+                                    </body>
+                                    <!-- <body name="robot:camera" pos="0.03 0 0.09">
                                         <inertial diaginertia="0.0 0.0 0.0" mass="0" pos="0 0 0"></inertial>
                                         <camera name="robot:camera" pos="0 0 0" euler="0 0 -1.57079633" fovy="58"></camera>
                                         <geom type="box" name="robot:camera" size="0.021 0.021 0.0115" pos="0 0 -0.0115" rgba="1 0 0 1"></geom>
@@ -50,7 +58,7 @@
                                         <body name="robot:ee_adhesion" pos="0 0 -0.003">
                                             <geom type="box" size="0.002 0.002 0.002" pos="0 0 0.002" class="end_effector"></geom>
                                         </body>
-                                    </body>
+                                    </body> -->
                                 </body>
                             </body>
                         </body>
