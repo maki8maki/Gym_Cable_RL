@@ -12,13 +12,13 @@ from tqdm import tqdm
 
 import gym_cable
 from agents.buffer import PrioritizedReplayBuffer
-from config import CombConfig, PPOConfig, TrainFEConfig
+from config import CombConfig, TrainFEConfig
 from utils import EarlyStopping, anim, check_freq, return_transition
 
 
 class Executer:
     env: gym.Env
-    cfg: Union[CombConfig, PPOConfig, TrainFEConfig]
+    cfg: Union[CombConfig, TrainFEConfig]
     options: dict = None
     writer: SummaryWriter
 
@@ -342,106 +342,3 @@ class CLCombExecuter(CombExecuter):
             if check_freq(self.cfg.nepisodes, episode, self.cfg.eval_num):
                 self.eval_episode_loop(episode, frames, titles)
                 self.cfg.rl.model.train()
-
-
-class CombPPOExecuter(CombExecuter):
-    def __init__(self, env_name: str, cfg: PPOConfig, options=None):
-        super().__init__(env_name, cfg, options)
-        self.cfg = cfg
-        self.ep = 1
-
-    def train_step_loop(self):
-        episode_reward, episode_length = 0, 0
-        state = self.reset_get_state()
-        for step in tqdm(range(self.cfg.rl.model.buffer.memory_size), leave=False):
-            act, v, logp = self.cfg.rl.model.ac.step(th.as_tensor(state, dtype=th.float32, device=self.cfg.device))
-            transition = self.set_action(state, act)
-            self.cfg.rl.model.buffer.append(transition["state"], transition["action"], transition["reward"], v, logp)
-            episode_reward += transition["reward"]
-            episode_length += 1
-            state = transition["next_state"]
-            timeout = episode_length == self.cfg.nsteps
-            terminal = transition["done"] or timeout
-            epoch_ended = step == self.cfg.rl.model.buffer.memory_size - 1
-
-            if terminal or epoch_ended:
-                self.writer.add_scalar("train/reward", episode_reward, self.ep)
-                self.writer.add_scalar("train/step", episode_length, self.ep)
-                if timeout or epoch_ended:
-                    _, v, _ = self.cfg.rl.model.ac.step(th.as_tensor(state, dtype=th.float32, device=self.cfg.device))
-                else:
-                    v = 0
-                self.cfg.rl.model.buffer.finish_path(v)
-                state = self.reset_get_state()
-                episode_reward, episode_length = 0, 0
-                self.ep += 1
-
-    def train_epoch_loop(self, frames: list, titles: list):
-        self.cfg.fe.model.eval()
-        self.cfg.rl.model.train()
-        for epoch in tqdm(range(self.cfg.nepochs)):
-            self.train_step_loop()
-            data = self.cfg.rl.model.buffer.sample()
-            indices = np.arange(self.cfg.rl.model.buffer.memory_size)
-            np.random.shuffle(indices)
-            loss_pi, loss_v = [], []
-            for start in tqdm(range(0, self.cfg.rl.model.buffer.memory_size, self.cfg.batch_size), leave=False):
-                idxes = indices[start : start + self.cfg.batch_size]
-                batch = {k: v[idxes] for k, v in data.items()}
-                self.cfg.rl.model.update_from_batch(batch)
-                loss_pi.append(self.cfg.rl.model.info["loss_pi"])
-                loss_v.append(self.cfg.rl.model.info["loss_v"])
-            self.writer.add_scalar("train/loss_pi", np.mean(loss_pi), epoch)
-            self.writer.add_scalar("train/loss_v", np.mean(loss_v), epoch)
-            if check_freq(self.cfg.nepochs, epoch, self.cfg.eval_num):
-                self.eval_episode_loop(epoch, frames, titles)
-                self.cfg.rl.model.train()
-
-    def eval_episode_loop(self, episode: int, frames: list, titles: list):
-        self.cfg.rl.model.eval()
-        eval_reward = 0.0
-        steps = 0.0
-        for evalepisode in range(self.cfg.nevalepisodes):
-            save_frames = (evalepisode == 0) and check_freq(self.cfg.nepochs, episode, self.cfg.save_anim_num)
-            state = self.reset_get_state()
-            if save_frames:
-                frames.append(self.env.render())
-                titles.append(f"Episode {episode+1}")
-            for step in range(self.cfg.nsteps):
-                action = self.cfg.rl.model.get_action(state, deterministic=True)
-                transition = self.set_action(state, action)
-                eval_reward += transition["reward"]
-                if save_frames:
-                    frames.append(self.env.render())
-                    titles.append(f"Episode {episode+1}")
-                if transition["done"]:
-                    break
-                else:
-                    state = transition["next_state"]
-            steps += step + 1.0
-        self.writer.add_scalar("test/reward", eval_reward / self.cfg.nevalepisodes, episode + 1)
-        self.writer.add_scalar("test/step", steps / self.cfg.nevalepisodes, episode + 1)
-
-    def train(self):
-        frames = []
-        titles = []
-        try:
-            self.train_epoch_loop(frames=frames, titles=titles)
-        except KeyboardInterrupt:
-            self.cfg.rl.model.save(os.path.join(self.cfg.output_dir, f"{self.cfg.basename}.pth"))
-            anim(frames, titles=titles, filename=f"{self.cfg.output_dir}/{self.cfg.basename}-1.mp4", show=False)
-            sys.exit(1)
-        anim(frames, titles=titles, filename=f"{self.cfg.output_dir}/{self.cfg.basename}-1.mp4", show=False)
-
-    def test(self):
-        frames = []
-        titles = []
-        self.test_step_loop(frames=frames, titles=titles)
-        anim(frames, titles=titles, filename=f"{self.cfg.output_dir}/{self.cfg.basename}-2.mp4", show=False)
-        self.cfg.rl.model.save(os.path.join(os.getcwd(), "model", f"{self.cfg.basename}.pth"))
-        self.cfg.rl.model.save(os.path.join(self.cfg.output_dir, f"{self.cfg.basename}.pth"))
-
-    def __call__(self):
-        self.train()
-        self.test()
-        self.close()
