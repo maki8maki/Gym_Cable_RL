@@ -11,8 +11,10 @@ memory_size: 10000
 nsteps: 100
 position_random: False
 posture_random: False
-nepisodes: 5000
+start_steps: 10000
+total_steps: 500000
 nevalepisodes: 5
+update_after: 1000
 update_every: 50
 batch_size: 50
 save_anim_num: 10
@@ -24,7 +26,5 @@ _replay_buffer:
   memory_size: ${memory_size}
 
 basename: SAC_trainedDCAE_o-${rl.obs_dim}_a-${rl.act_dim}
-
-gathering_data: True
 
 fe_with_init: True

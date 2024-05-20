@@ -40,8 +40,8 @@ def goal_distance(goal_a, goal_b):
 def calc_err_norm(cur, goal):
     assert cur.shape == goal.shape
     assert cur.shape[-1] == 6
-    position_err = goal_distance(cur[:3], goal[:3])
-    err_rot_quat = rotations.subtract_eular2quat(cur[3:], goal[3:])
+    position_err = goal_distance(goal[:3], cur[:3])
+    err_rot_quat = rotations.subtract_eular2quat(goal[3:], cur[3:])
     _, posture_err = rotations.quat2axisangle(err_rot_quat)
     return position_err, abs(posture_err)
 

@@ -2,7 +2,6 @@ import os
 import sys
 from typing import Union
 
-import dill
 import gymnasium as gym
 import numpy as np
 import torch as th
@@ -12,8 +11,9 @@ from tqdm import tqdm
 
 import gym_cable
 from agents.buffer import PrioritizedReplayBuffer
+from agents.utils import Transition
 from config import CombConfig, TrainFEConfig
-from utils import EarlyStopping, anim, check_freq, return_transition
+from utils import EarlyStopping, anim, check_freq
 
 
 class Executer:
@@ -186,48 +186,42 @@ class CombExecuter(Executer):
         state = np.concatenate([hs, normalized_obs["observation"][: self.cfg.rl.obs_dim]])
         return state
 
-    def set_action(self, state: np.ndarray, action: np.ndarray):
+    def set_action(self, state: np.ndarray, action: np.ndarray) -> Transition:
         if self.cfg.rl.act_dim < self.env.action_space.shape[0]:
             action = np.concatenate([action, np.zeros((self.env.action_space.shape[0] - self.cfg.rl.act_dim,))])
         next_obs, reward, terminated, truncated, _ = self.env.step(action)
         next_state = self.obs2state(next_obs)
-        transition = return_transition(state, next_state, reward, action[: self.cfg.rl.act_dim], terminated, truncated)
+        transition = Transition(state, next_state, reward, action[: self.cfg.rl.act_dim], terminated, truncated)
         return transition
 
-    def gathering_data(self):
-        data_path = os.path.join(os.getcwd(), "data", self.cfg.buffer_name)
-        if self.cfg.gathering_data:
-            state = self.reset_get_state()
-            for _ in tqdm(range(self.cfg.memory_size)):
+    def train_loop(self, frames: list, titles: list):
+        state = self.reset_get_state()
+        ep_rew, ep_len = 0, 0
+        for step in tqdm(range(self.cfg.total_steps)):
+            if step >= self.cfg.start_steps:
+                action = self.cfg.rl.model.get_action(state)
+            else:
                 action = self.act_space.sample()
-                transition = self.set_action(state, action)
-                self.cfg.replay_buffer.append(transition)
-                if transition["done"]:
-                    state = self.reset_get_state()
-                else:
-                    state = transition["next_state"]
-            with open(data_path, "wb") as f:
-                dill.dump(self.cfg.replay_buffer, f)
-            # ログ出力フォルダにも保存
-            with open(os.path.join(self.cfg.output_dir, self.cfg.buffer_name), "wb") as f:
-                dill.dump(self.cfg.replay_buffer, f)
-        else:
-            with open(data_path, "rb") as f:
-                self.cfg.replay_buffer = dill.load(f)
-            # ログ出力フォルダにも保存
-            with open(os.path.join(self.cfg.output_dir, self.cfg.buffer_name), "wb") as f:
-                dill.dump(self.cfg.replay_buffer, f)
-
-    def train_step_loop(self, episode: int, state: np.ndarray):
-        episode_reward = 0
-        for step in range(self.cfg.nsteps):
-            action = self.cfg.rl.model.get_action(state)
             transition = self.set_action(state, action)
+
+            ep_rew += transition.reward
+            ep_len += 1
+            is_timeout = ep_len == self.cfg.nsteps
+            transition.done = 0 if is_timeout else transition.done
+
             self.cfg.replay_buffer.append(transition)
-            episode_reward += transition["reward"]
-            if self.update_count % self.cfg.update_every == 0:
+
+            if transition.done or is_timeout:
+                self.writer.add_scalar("train/episode_reward", ep_rew, step)
+                self.writer.add_scalar("train/episode_length", ep_len, step)
+                state = self.reset_get_state()
+                ep_rew, ep_len = 0, 0
+            else:
+                state = transition.next_state
+
+            if step >= self.cfg.update_after and (step + 1) % self.cfg.update_every == 0:
                 for upc in range(self.cfg.update_every):
-                    num = self.update_count - (self.cfg.update_every - upc)
+                    num = step + 1 - (self.cfg.update_every - upc)
                     if isinstance(self.cfg.replay_buffer, PrioritizedReplayBuffer):
                         batch = self.cfg.replay_buffer.sample(self.cfg.batch_size, num)
                         loss = self.cfg.rl.model.update_from_batch(batch)
@@ -237,50 +231,41 @@ class CombExecuter(Executer):
                         _ = self.cfg.rl.model.update_from_batch(batch)
                     for key in self.cfg.rl.model.info.keys():
                         self.writer.add_scalar("train/" + key, self.cfg.rl.model.info[key], num)
-            self.update_count += 1
-            if transition["done"]:
-                break
-            else:
-                state = transition["next_state"]
-        self.writer.add_scalar("train/reward", episode_reward, episode + 1)
-        self.writer.add_scalar("train/step", step, episode + 1)
 
-    def eval_episode_loop(self, episode: int, frames: list, titles: list):
+            if check_freq(self.cfg.total_steps, step, self.cfg.eval_num):
+                self.eval_loop(step, frames, titles)
+                self.cfg.rl.model.train()
+
+    def eval_loop(self, cur_step: int, frames: list, titles: list):
         self.cfg.rl.model.eval()
         eval_reward = 0.0
         steps = 0.0
+        success_num = 0.0
         for evalepisode in range(self.cfg.nevalepisodes):
-            save_frames = (evalepisode == 0) and check_freq(self.cfg.nepisodes, episode, self.cfg.save_anim_num)
+            save_frames = evalepisode == 0
             state = self.reset_get_state()
             if save_frames:
                 frames.append(self.env.render())
-                titles.append(f"Episode {episode+1}")
+                titles.append(f"Step {cur_step+1}")
             for step in range(self.cfg.nsteps):
                 action = self.cfg.rl.model.get_action(state, deterministic=True)
                 transition = self.set_action(state, action)
-                eval_reward += transition["reward"]
+                eval_reward += transition.reward
                 if save_frames:
                     frames.append(self.env.render())
-                    titles.append(f"Episode {episode+1}")
-                if transition["done"]:
+                    titles.append(f"Step {cur_step+1}")
+                if transition.done:
+                    if transition.success:
+                        success_num += 1.0
                     break
                 else:
-                    state = transition["next_state"]
+                    state = transition.next_state
             steps += step + 1.0
-        self.writer.add_scalar("test/reward", eval_reward / self.cfg.nevalepisodes, episode + 1)
-        self.writer.add_scalar("test/step", steps / self.cfg.nevalepisodes, episode + 1)
+        self.writer.add_scalar("test/episode_reward", eval_reward / self.cfg.nevalepisodes, cur_step + 1)
+        self.writer.add_scalar("test/episode_length", steps / self.cfg.nevalepisodes, cur_step + 1)
+        self.writer.add_scalar("test/success_rate", success_num / self.cfg.nevalepisodes, cur_step + 1)
 
-    def train_epsiode_loop(self, frames: list, titles: list):
-        self.cfg.fe.model.eval()
-        self.cfg.rl.model.train()
-        for episode in tqdm(range(self.cfg.nepisodes)):
-            state = self.reset_get_state()
-            self.train_step_loop(episode, state)
-            if check_freq(self.cfg.nepisodes, episode, self.cfg.eval_num):
-                self.eval_episode_loop(episode, frames, titles)
-                self.cfg.rl.model.train()
-
-    def test_step_loop(self, frames: list, titles: list):
+    def test_loop(self, frames: list, titles: list):
         self.cfg.rl.model.eval()
         state = self.reset_get_state()
         frames.append(self.env.render())
@@ -290,17 +275,19 @@ class CombExecuter(Executer):
             transition = self.set_action(state, action)
             frames.append(self.env.render())
             titles.append(f"Step {step+1}")
-            if transition["done"]:
+            if transition.done:
                 break
             else:
-                state = transition["next_state"]
+                state = transition.next_state
 
     def train(self):
         frames = []
         titles = []
         anim_path = os.path.join(self.cfg.output_dir, f"{self.cfg.basename}-1.mp4")
         try:
-            self.train_epsiode_loop(frames=frames, titles=titles)
+            self.cfg.fe.model.eval()
+            self.cfg.rl.model.train()
+            self.train_loop(frames=frames, titles=titles)
         except KeyboardInterrupt:
             self.cfg.rl.model.save(os.path.join(self.cfg.output_dir, f"{self.cfg.basename}.pth"))
             anim(frames, titles=titles, filename=anim_path, show=False)
@@ -310,7 +297,8 @@ class CombExecuter(Executer):
     def test(self):
         frames = []
         titles = []
-        self.test_step_loop(frames=frames, titles=titles)
+        for _ in range(10):
+            self.test_loop(frames=frames, titles=titles)
         anim(
             frames, titles=titles, filename=os.path.join(self.cfg.output_dir, f"{self.cfg.basename}-2.mp4"), show=False
         )
@@ -318,7 +306,6 @@ class CombExecuter(Executer):
         self.cfg.rl.model.save(os.path.join(self.cfg.output_dir, f"{self.cfg.basename}.pth"))
 
     def __call__(self):
-        self.gathering_data()
         self.train()
         self.test()
         self.close()
@@ -329,16 +316,49 @@ class CLCombExecuter(CombExecuter):
         super().__init__(env_name=env_name, cfg=cfg, options=cl_scheduler[0][1])
         self.cl_scheduler = cl_scheduler
 
-    def train_epsiode_loop(self, frames: list, titles: list):
-        self.cfg.fe.model.eval()
-        self.cfg.rl.model.train()
+    def train_loop(self, frames: list, titles: list):
+        state = self.reset_get_state()
+        ep_rew, ep_len = 0, 0
         idx = 0
-        for episode in tqdm(range(self.cfg.nepisodes)):
-            if self.cl_scheduler[idx][0] <= episode + 1:
+        for step in tqdm(range(self.cfg.total_steps)):
+            if self.cl_scheduler[idx][0] <= step + 1:
                 self.options = self.cl_scheduler[idx][1]
                 idx = min(idx + 1, len(self.cl_scheduler) - 1)
-            state = self.reset_get_state()
-            self.train_step_loop(episode, state)
-            if check_freq(self.cfg.nepisodes, episode, self.cfg.eval_num):
-                self.eval_episode_loop(episode, frames, titles)
+
+            if step >= self.cfg.start_steps:
+                action = self.cfg.rl.model.get_action(state)
+            else:
+                action = self.act_space.sample()
+            transition = self.set_action(state, action)
+
+            ep_rew += transition.reward
+            ep_len += 1
+            is_timeout = ep_len == self.cfg.nsteps
+            transition.done = 0 if is_timeout else transition.done
+
+            self.cfg.replay_buffer.append(transition)
+
+            if transition.done or is_timeout:
+                self.writer.add_scalar("train/episode_reward", ep_rew, step)
+                self.writer.add_scalar("train/episode_length", ep_len, step)
+                state = self.reset_get_state()
+                ep_rew, ep_len = 0, 0
+            else:
+                state = transition.next_state
+
+            if step >= self.cfg.update_after and (step + 1) % self.cfg.update_every == 0:
+                for upc in range(self.cfg.update_every):
+                    num = step + 1 - (self.cfg.update_every - upc)
+                    if isinstance(self.cfg.replay_buffer, PrioritizedReplayBuffer):
+                        batch = self.cfg.replay_buffer.sample(self.cfg.batch_size, num)
+                        loss = self.cfg.rl.model.update_from_batch(batch)
+                        self.cfg.replay_buffer.update_priority(loss.flatten())
+                    else:
+                        batch = self.cfg.replay_buffer.sample(self.cfg.batch_size)
+                        _ = self.cfg.rl.model.update_from_batch(batch)
+                    for key in self.cfg.rl.model.info.keys():
+                        self.writer.add_scalar("train/" + key, self.cfg.rl.model.info[key], num)
+
+            if check_freq(self.cfg.total_steps, step, self.cfg.eval_num):
+                self.eval_loop(step, frames, titles)
                 self.cfg.rl.model.train()

@@ -1,12 +1,13 @@
+import dataclasses
 import random
 from typing import Tuple, Union
 
 import cv2
+import numpy as np
 import scipy
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import Tensor
 
 
 def size_after_conv(h, ksize, stride=1, padding=0):
@@ -73,7 +74,7 @@ class SSIMLoss(nn.Module):
         self.sigma = sigma
         self.gaussian_kernel = self._create_gaussian_kernel(self.channel, self.kernel_size, self.sigma)
 
-    def forward(self, x: Tensor, y: Tensor, as_loss: bool = True) -> Tensor:
+    def forward(self, x: th.Tensor, y: th.Tensor, as_loss: bool = True) -> th.Tensor:
         if not self.gaussian_kernel.is_cuda:
             self.gaussian_kernel = self.gaussian_kernel.to(x.device)
 
@@ -84,7 +85,7 @@ class SSIMLoss(nn.Module):
         else:
             return ssim_map
 
-    def _ssim(self, x: Tensor, y: Tensor) -> Tensor:
+    def _ssim(self, x: th.Tensor, y: th.Tensor) -> th.Tensor:
         # Compute means
         ux = F.conv2d(x, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
         uy = F.conv2d(y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
@@ -103,7 +104,7 @@ class SSIMLoss(nn.Module):
         denominator = (ux**2 + uy**2 + c1) * (vx + vy + c2)
         return numerator / (denominator + 1e-12)
 
-    def _create_gaussian_kernel(self, channel: int, kernel_size: int, sigma: float) -> Tensor:
+    def _create_gaussian_kernel(self, channel: int, kernel_size: int, sigma: float) -> th.Tensor:
         start = (1 - kernel_size) / 2
         end = (1 + kernel_size) / 2
         kernel_1d = th.arange(start, end, step=1, dtype=th.float)
@@ -196,6 +197,22 @@ class FE(nn.Module):
         return self._get_name() + "()"
 
 
+@dataclasses.dataclass
+class Transition:
+    state: np.ndarray
+    next_state: np.ndarray
+    reward: float
+    action: np.ndarray
+    terminated: dataclasses.InitVar[bool]
+    truncated: dataclasses.InitVar[bool]
+    success: bool = dataclasses.field(init=False)
+    done: int = dataclasses.field(init=False)
+
+    def __post_init__(self, terminated, truncated):
+        self.success = terminated
+        self.done = int(terminated or truncated)
+
+
 class MyTrans(nn.Module):
     def __init__(self, img_width, img_height):
         super().__init__()
@@ -210,10 +227,10 @@ class MyTrans(nn.Module):
 
 
 class SegTree:
-    def __init__(self, capacity, segfunc):
+    def __init__(self, capacity, segfunc, init_value=0):
         assert capacity & (capacity - 1) == 0
         self.capacity = capacity
-        self.values = [0 for _ in range(2 * capacity)]
+        self.values = [init_value for _ in range(2 * capacity)]
         self.segfunc = segfunc
 
     def __str__(self):
@@ -239,8 +256,8 @@ class SegTree:
 
 
 class SumTree(SegTree):
-    def __init__(self, capacity):
-        super().__init__(capacity, segfunc=lambda x, y: x + y)
+    def __init__(self, capacity, **kwargs):
+        super().__init__(capacity, segfunc=lambda x, y: x + y, **kwargs)
 
     def sum(self):
         return self.top()
@@ -257,14 +274,14 @@ class SumTree(SegTree):
                 current_idx = idx_rchild
                 z -= self.values[idx_lchild]
             else:
-                current_idx = idx_rchild
+                current_idx = idx_lchild
         idx = current_idx - self.capacity
         return idx
 
 
 class MinTree(SegTree):
     def __init__(self, capacity):
-        super().__init__(capacity, segfunc=min)
+        super().__init__(capacity, segfunc=min, init_value=np.inf)
 
     def min(self):
         return self.top()

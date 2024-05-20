@@ -55,7 +55,7 @@ class TrainFEConfig:
     position_random: bool = False
     posture_random: bool = False
     batch_size: int = 128
-    nepochs = 500
+    nepochs: int = 500
     es_patience: int = 10
     device: str = "cpu"
     seed: dataclasses.InitVar[int] = None
@@ -128,8 +128,10 @@ class CombConfig:
     position_random: bool = False
     posture_random: bool = False
     memory_size: int = 10000
-    nepisodes: int = 5000
+    start_steps: int = 10000
+    total_steps: int = 5e5
     nevalepisodes: int = dataclasses.field(default=5, repr=False)
+    update_after: int = 1000
     update_every: int = 50
     batch_size: int = 50
     save_anim_num: int = dataclasses.field(default=10, repr=False)
@@ -137,8 +139,6 @@ class CombConfig:
     device: str = "cpu"
     seed: dataclasses.InitVar[int] = None
     replay_buffer: buffer.Buffer = buffer.ReplayBuffer(memory_size=memory_size)
-    gathering_data: bool = False
-    buffer_name: str = dataclasses.field(init=False)
     fe_with_init: dataclasses.InitVar[bool] = True
     output_dir: str = dataclasses.field(default=None)
 
@@ -166,10 +166,6 @@ class CombConfig:
             posture_random = "r"
         else:
             posture_random = "s"
-        self.buffer_name = (
-            f"buffer_o-{self.rl.obs_dim}_a-{self.rl.act_dim}_{position_random}{posture_random}"
-            f"_w-hs_{self.memory_size}.pcl"
-        )
         self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
