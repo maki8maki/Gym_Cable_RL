@@ -2,7 +2,7 @@ from collections import deque
 
 import numpy as np
 
-from .utils import MinTree, SumTree, Transition, discount_cumsum
+from .utils import MinTree, SumTree, Transition
 
 
 class Buffer:
@@ -104,46 +104,3 @@ class PrioritizedReplayBuffer(Buffer):
         for idx, priority in zip(self.indices, priorities):
             self.priorities[idx] = priority
         self.max_priority = max(self.max_priority, priorities.max())
-
-
-class PPOBuffer(Buffer):
-    def __init__(self, memory_size, obs_dim, act_dim, gamma=0.99, lam=0.95):
-        super().__init__(memory_size)
-        self.obs = np.zeros((memory_size, obs_dim), dtype=np.float32)
-        self.act = np.zeros((memory_size, act_dim), dtype=np.float32)
-        self.adv = np.zeros(memory_size, dtype=np.float32)
-        self.rew = np.zeros(memory_size, dtype=np.float32)
-        self.ret = np.zeros(memory_size, dtype=np.float32)
-        self.val = np.zeros(memory_size, dtype=np.float32)
-        self.logp = np.zeros(memory_size, dtype=np.float32)
-        self.gamma, self.lam = gamma, lam
-        self.ptr, self.path_start_idx = 0, 0
-
-    def append(self, obs, act, rew, val, logp):
-        assert self.ptr < self.memory_size
-        self.obs[self.ptr] = obs
-        self.act[self.ptr] = act
-        self.rew[self.ptr] = rew
-        self.val[self.ptr] = val
-        self.logp[self.ptr] = logp
-        self.ptr += 1
-
-    def finish_path(self, last_val=0):
-        path_slice = slice(self.path_start_idx, self.ptr)
-        rews = np.append(self.rew[path_slice], last_val)
-        vals = np.append(self.val[path_slice], last_val)
-
-        deltas = rews[:-1] + self.gamma * vals[:-1] - vals[:-1]
-        self.adv[path_slice] = discount_cumsum(deltas, self.gamma * self.lam)
-        self.ret[path_slice] = discount_cumsum(rews, self.gamma)[:-1]
-
-        self.path_start_idx = self.ptr
-
-    def sample(self):
-        assert self.ptr == self.memory_size
-        self.ptr, self.path_start_idx = 0, 0
-        adv_mean = np.mean(self.adv)
-        adv_diff = self.adv - adv_mean
-        adv_std = np.mean(adv_diff**2)
-        self.adv = adv_diff / adv_std
-        return {"obs": self.obs, "act": self.act, "ret": self.ret, "adv": self.adv, "logp": self.logp}
