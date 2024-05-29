@@ -86,7 +86,7 @@ class BaseRobotEnv(GoalEnv):
         info["ik_success"] = self.ik_success
         info["contacted"] = self.data.ncon > 10
         position_err, posture_err = self._utils.calc_err_norm(obs, goal)
-        is_far = (position_err > 0.2) or (posture_err > np.deg2rad(30))
+        is_far = (position_err > 0.2) or (posture_err > np.deg2rad(45))
         info["is_far"] = is_far
         return (not info["ik_success"]) or info["contacted"] or info["is_far"]
 

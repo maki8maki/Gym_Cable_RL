@@ -128,10 +128,11 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             raise NotImplementedError
 
         def _sample_goal(self):
-            cable_end_pos = self.data.body("B_last").xpos
-            cable_end_mat = self.data.body("B_last").xmat.reshape(3, 3)
-            goal_pos = cable_end_pos + cable_end_mat.T @ self.target_offset
-            goal_rot = rotations.quat2euler(self.data.body("B_last").xquat)
+            cable_end_pos = self._utils.get_site_xpos(self.model, self.data, "S_last")
+            cable_end_mat = self._utils.get_site_xmat(self.model, self.data, "S_last")
+            diff = np.dot(cable_end_mat, np.reshape(self.target_offset, (3, 1)))
+            goal_pos = cable_end_pos + np.reshape(diff, (3,))
+            goal_rot = rotations.mat2euler(cable_end_mat)
             return np.concatenate([goal_pos, goal_rot])
 
         def _is_success(self, obs, goal):
@@ -203,7 +204,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
             self.model.body("B_first").pos[1] += diff
         if self.posture_random:
             diff = self.np_random.uniform(0, self.obj_posture_range)
-            self.model.body("B_10").quat = rotations.euler2quat(np.deg2rad(np.array([0, diff - 90, 0])))
+            self.model.body("B_10").quat = rotations.euler2quat(np.deg2rad(np.array([180, 90 - diff, 0])))
 
         self._mujoco.mj_forward(self.model, self.data)
         return True
