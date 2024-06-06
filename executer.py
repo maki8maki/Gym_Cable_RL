@@ -36,7 +36,7 @@ class Executer:
         if len(image_list) > 0:
             image = normalized_obs[image_list[0]] * 0.5 + 0.5
             for name in image_list[1:]:
-                image = np.concatenate([image, normalized_obs[name]], axis=2)
+                image = np.concatenate([image, normalized_obs[name] * 0.5 + 0.5], axis=2)
             state = {"observation": normalized_obs["observation"], "image": self.cfg.fe.trans(image)}
             return state
         else:
@@ -178,9 +178,9 @@ class CombExecuter(Executer):
 
     def obs2state(self, obs, image_list=["rgb_image", "depth_image"]):
         normalized_obs = self.normalize_state(obs)
-        image = normalized_obs[image_list[0]]
+        image = normalized_obs[image_list[0]] * 0.5 + 0.5
         for name in image_list[1:]:
-            image = np.concatenate([image, normalized_obs[name]], axis=2)
+            image = np.concatenate([image, normalized_obs[name] * 0.5 + 0.5], axis=2)
         image = th.tensor(self.cfg.fe.trans(image), dtype=th.float, device=self.cfg.device)
         hs = self.cfg.fe.model.forward(image).cpu().squeeze().detach().numpy()
         state = np.concatenate([hs, normalized_obs["observation"][: self.cfg.rl.obs_dim]])
