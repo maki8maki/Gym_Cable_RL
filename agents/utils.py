@@ -224,7 +224,7 @@ class MyTrans(nn.Module):
         """
         resize, shapeの変更, [-1, 1]を[0, 1]に変換
         """
-        return cv2.resize(img, (self.img_width, self.img_height)).transpose(2, 0, 1) * 0.5 + 0.5
+        return cv2.resize(img, (self.img_width, self.img_height)).transpose(2, 0, 1)
 
 
 class CropTrans(nn.Module):
@@ -240,7 +240,7 @@ class CropTrans(nn.Module):
         s = min(img.shape[:2])
         _img = TF.center_crop(TF.to_tensor(img), (s, s))
         _img = cv2.resize(_img.detach().numpy().transpose((1, 2, 0)), self.size)
-        return _img.transpose(2, 0, 1) * 0.5 + 0.5
+        return _img.transpose(2, 0, 1)
 
 
 class SegTree:
