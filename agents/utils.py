@@ -7,7 +7,8 @@ import numpy as np
 import scipy
 import torch as th
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as NF
+import torchvision.transforms.functional as TF
 
 
 def size_after_conv(h, ksize, stride=1, padding=0):
@@ -87,13 +88,13 @@ class SSIMLoss(nn.Module):
 
     def _ssim(self, x: th.Tensor, y: th.Tensor) -> th.Tensor:
         # Compute means
-        ux = F.conv2d(x, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
-        uy = F.conv2d(y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
+        ux = NF.conv2d(x, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
+        uy = NF.conv2d(y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
 
         # Compute variances
-        uxx = F.conv2d(x * x, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
-        uyy = F.conv2d(y * y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
-        uxy = F.conv2d(x * y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
+        uxx = NF.conv2d(x * x, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
+        uyy = NF.conv2d(y * y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
+        uxy = NF.conv2d(x * y, self.gaussian_kernel, padding=self.kernel_size // 2, groups=self.channel)
         vx = uxx - ux * ux
         vy = uyy - uy * uy
         vxy = uxy - ux * uy
@@ -226,6 +227,22 @@ class MyTrans(nn.Module):
         return cv2.resize(img, (self.img_width, self.img_height)).transpose(2, 0, 1) * 0.5 + 0.5
 
 
+class CropTrans(nn.Module):
+    """
+    画像の左右、または上下の両端を切り落として指定の大きさの正方形にリサイズする
+    """
+
+    def __init__(self, img_size=64):
+        super().__init__()
+        self.size = (img_size, img_size)
+
+    def __call__(self, img: np.ndarray):
+        s = min(img.shape[:2])
+        _img = TF.center_crop(TF.to_tensor(img), (s, s))
+        _img = cv2.resize(_img.detach().numpy().transpose((1, 2, 0)), self.size)
+        return _img.transpose(2, 0, 1) * 0.5 + 0.5
+
+
 class SegTree:
     def __init__(self, capacity, segfunc, init_value=0):
         assert capacity & (capacity - 1) == 0
@@ -264,7 +281,7 @@ class SumTree(SegTree):
 
     def sample(self, z=None):
         z = random.uniform(0, self.sum()) if z is None else z
-        assert 0 <= z <= self.sum()
+        assert 0 <= z <= self.sum(), f"z: {z}, self.sum(): {self.sum()}"
 
         current_idx = 1
         while current_idx < self.capacity:
