@@ -222,7 +222,7 @@ class MyTrans(nn.Module):
 
     def __call__(self, img):
         """
-        resize, shapeの変更, [-1, 1]を[0, 1]に変換
+        resize, shapeの変更
         """
         return cv2.resize(img, (self.img_width, self.img_height)).transpose(2, 0, 1)
 
