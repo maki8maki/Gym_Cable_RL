@@ -16,8 +16,8 @@ from utils import set_seed
 
 @dataclasses.dataclass
 class FEConfig:
-    img_width: int = 108
-    img_height: int = 72
+    img_width: int = 64
+    img_height: int = 64
     img_channel: int = 4
     hidden_dim: int = 20
     model_name: str = ""
