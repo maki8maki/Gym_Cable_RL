@@ -23,11 +23,7 @@ class UnFlatten(nn.Module):
         self.size = size
 
     def forward(self, input: th.Tensor):
-        if input.ndim < 4:
-            batch_size = 1
-        else:
-            batch_size = input.size(0)
-        return input.view(batch_size, self.size, 1, 1)
+        return input.view(-1, self.size, 1, 1)
 
 
 class ConvVAE(FE):
