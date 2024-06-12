@@ -2,16 +2,21 @@ import dataclasses
 from copy import deepcopy
 
 import dacite
+import gymnasium as gym
 import hydra
 import torch
 import torch.nn as nn
 from absl import logging
 from omegaconf import OmegaConf
+from stable_baselines3.common.base_class import BaseAlgorithm
+from stable_baselines3.common.callbacks import CallbackList, EvalCallback
 
+import gym_cable
 from agents import buffer, utils
 from agents.DCAE import DCAE
 from agents.SAC import SAC
 from utils import set_seed
+from wrapper import FEWrapper
 
 
 @dataclasses.dataclass
@@ -180,4 +185,78 @@ class CombConfig:
         cfg.rl.model.to(cfg.device)
         cfg.basename = _cfg.basename + ("_r" if cfg.position_random else "_s") + ("r" if cfg.posture_random else "s")
         cfg.replay_buffer = hydra.utils.instantiate(_cfg._replay_buffer)
+        return cfg
+
+
+@dataclasses.dataclass
+class SB3Config:
+    fe: FEConfig
+    basename: str
+    _env: dataclasses.InitVar[dict]
+    _model: dataclasses.InitVar[dict]
+    nsteps: int = dataclasses.field(default=100, repr=False)
+    position_random: bool = False
+    posture_random: bool = False
+    fe_with_init: dataclasses.InitVar[bool] = True
+    device: str = "cpu"
+    total_steps: int = 5e5
+    seed: int = None
+    # save_anim_num: int = dataclasses.field(default=10, repr=False)
+    nevalepisodes: int = 5
+    eval_num: int = 1000
+    model: BaseAlgorithm = dataclasses.field(default=None)
+    callbacks: CallbackList = dataclasses.field(default=None)
+    output_dir: str = dataclasses.field(default=None)
+
+    def __post_init__(self, fe_with_init, _env, _model):
+        if self.seed is not None:
+            set_seed(self.seed)
+        if self.device == "cpu":
+            logging.warning("You are using CPU!!")
+        if self.device == "cuda" and not torch.cuda.is_available():
+            self.device = "cpu"
+            logging.warning("Device changed to CPU!!")
+        if fe_with_init:
+            init = "w-init"
+        else:
+            init = "wo-init"
+        if self.position_random:
+            position_random = "r"
+        else:
+            position_random = "s"
+        if self.posture_random:
+            posture_random = "r"
+        else:
+            posture_random = "s"
+        self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
+        self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+
+    @classmethod
+    def convert(cls, _cfg: OmegaConf):
+        cfg = dacite.from_dict(data_class=cls, data=OmegaConf.to_container(_cfg))
+        cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
+        cfg.fe.model.to(device=cfg.device)
+
+        gym_cable.register_robotics_envs()
+        env = gym.make(
+            max_episode_steps=cfg.nsteps,
+            position_random=cfg.position_random,
+            posture_random=cfg.posture_random,
+            **_cfg._env,
+        )
+        env = FEWrapper(env=env, model=cfg.fe.model, trans=cfg.fe.trans)
+        cfg.model = hydra.utils.instantiate(
+            _cfg._model, env=env, tensorboard_log=cfg.output_dir, seed=cfg.seed, device=cfg.device
+        )
+        eval_callback = EvalCallback(
+            eval_env=env,
+            n_eval_episodes=cfg.nevalepisodes,
+            best_model_save_path=cfg.output_dir,
+            log_path=cfg.output_dir,
+            eval_freq=int(cfg.total_steps / cfg.eval_num),
+            verbose=0,
+            deterministic=True,
+            render=False,
+        )
+        cfg.callbacks = CallbackList([eval_callback])
         return cfg
