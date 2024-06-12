@@ -188,6 +188,10 @@ class FE(nn.Module):
     def __init__(self):
         super().__init__()
 
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
     def forward(self, x: th.Tensor, return_pred: bool = False) -> Union[th.Tensor, Tuple[th.Tensor, th.Tensor]]:
         raise NotImplementedError()
 
