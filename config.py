@@ -205,7 +205,7 @@ class SB3Config:
     nevalepisodes: int = 5
     eval_num: int = 1000
     model: BaseAlgorithm = dataclasses.field(default=None)
-    callbacks: CallbackList = dataclasses.field(default=None)
+    callbacks: CallbackList = dataclasses.field(default=None, repr=False)
     output_dir: str = dataclasses.field(default=None)
 
     def __post_init__(self, fe_with_init, _env, _model):
