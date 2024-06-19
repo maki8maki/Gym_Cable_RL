@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "ms-python.autopep8",
+        "ms-python.black-formatter",
+        "ms-python.flake8",
+        "mhutchie.git-graph",
+        "ms-python.isort",
+        "ms-python.python",
+        "ms-toolsai.tensorboard",
+        "shardulm94.trailing-spaces",
+        "tomoki1207.pdf",
+        "mosapride.zenkaku"
+    ]
+}
