@@ -26,10 +26,10 @@ class MujocoMZ04CableGraspEnv(MujocoMZ04Env, EzPickle):
             n_substeps=20,
             target_offset=np.array([-0.009, 0.0, 0.002]),
             obj_position_range=0.04,  # m
-            obj_posture_range=45,  # deg
+            obj_posture_range=20,  # deg
             distance_threshold=0.01,  # m
             rotation_threshold=np.deg2rad(5),  # rad
-            rot_weight=2.0,
+            rot_weight=0.25,
             initial_qpos=initial_qpos,
             width=848,
             height=480,
