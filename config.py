@@ -10,6 +10,7 @@ from absl import logging
 from omegaconf import OmegaConf
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import CallbackList, EvalCallback
+from stable_baselines3.common.monitor import Monitor
 
 import gym_cable
 from agents import buffer, utils
@@ -249,7 +250,7 @@ class SB3Config:
             _cfg._model, env=env, tensorboard_log=cfg.output_dir, seed=cfg.seed, device=cfg.device
         )
         eval_callback = EvalCallback(
-            eval_env=env,
+            eval_env=Monitor(env),
             n_eval_episodes=cfg.nevalepisodes,
             best_model_save_path=cfg.output_dir,
             log_path=cfg.output_dir,
