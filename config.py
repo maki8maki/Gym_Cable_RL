@@ -4,7 +4,7 @@ from copy import deepcopy
 import dacite
 import gymnasium as gym
 import hydra
-import torch
+import torch as th
 import torch.nn as nn
 from absl import logging
 from omegaconf import OmegaConf
@@ -77,7 +77,7 @@ class TrainFEConfig:
             set_seed(seed)
         if self.device == "cpu":
             logging.warning("You are using CPU!!")
-        if self.device == "cuda" and not torch.cuda.is_available():
+        if self.device == "cuda" and not th.cuda.is_available():
             self.device = "cpu"
             logging.warning("Device changed to CPU!!")
         if self.fe.model is not None:
@@ -153,7 +153,7 @@ class CombConfig:
             set_seed(seed)
         if self.device == "cpu":
             logging.warning("You are using CPU!!")
-        if self.device == "cuda" and not torch.cuda.is_available():
+        if self.device == "cuda" and not th.cuda.is_available():
             self.device = "cpu"
             logging.warning("Device changed to CPU!!")
         if self.fe.model is not None:
@@ -195,6 +195,7 @@ class SB3Config:
     basename: str
     _env: dataclasses.InitVar[dict]
     _model: dataclasses.InitVar[dict]
+    env: gym.Env = dataclasses.field(default=None)
     nsteps: int = dataclasses.field(default=100, repr=False)
     position_random: bool = False
     posture_random: bool = False
@@ -214,7 +215,7 @@ class SB3Config:
             set_seed(self.seed)
         if self.device == "cpu":
             logging.warning("You are using CPU!!")
-        if self.device == "cuda" and not torch.cuda.is_available():
+        if self.device == "cuda" and not th.cuda.is_available():
             self.device = "cpu"
             logging.warning("Device changed to CPU!!")
         if fe_with_init:
@@ -237,6 +238,7 @@ class SB3Config:
         cfg = dacite.from_dict(data_class=cls, data=OmegaConf.to_container(_cfg))
         cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
         cfg.fe.model.to(device=cfg.device)
+        cfg.fe.model.load_state_dict(th.load(f"./model/{cfg.fe.model_name}", map_location=cfg.device))
 
         gym_cable.register_robotics_envs()
         env = gym.make(
@@ -245,12 +247,12 @@ class SB3Config:
             posture_random=cfg.posture_random,
             **_cfg._env,
         )
-        env = FEWrapper(env=env, model=cfg.fe.model, trans=cfg.fe.trans)
+        cfg.env = FEWrapper(env=env, model=cfg.fe.model, trans=cfg.fe.trans)
         cfg.model = hydra.utils.instantiate(
-            _cfg._model, env=env, tensorboard_log=cfg.output_dir, seed=cfg.seed, device=cfg.device
+            _cfg._model, env=cfg.env, tensorboard_log=cfg.output_dir, seed=cfg.seed, device=cfg.device
         )
         eval_callback = EvalCallback(
-            eval_env=Monitor(env),
+            eval_env=Monitor(cfg.env),
             n_eval_episodes=cfg.nevalepisodes,
             best_model_save_path=cfg.output_dir,
             log_path=cfg.output_dir,
