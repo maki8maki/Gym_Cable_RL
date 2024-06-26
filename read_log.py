@@ -69,6 +69,7 @@ def show_image(log_dir, tagnames=None, is_save=False):
 
 
 if __name__ == "__main__":
-    log_dir = "logs/DCAE/20240424-1908"
-    tagnames = ["depth/200_reconstructed", "rgb/200_reconstructed", "depth/200_original", "rgb/200_original"]
+    log_dir = "logs/VAE/20240619-1400"
+    tagnames = ["depth/500_reconstructed", "rgb/500_reconstructed", "depth/500_original", "rgb/500_original"]
     show_image(log_dir, tagnames, is_save=True)
+    # plot(log_dir, tagnames=["eval/mean_reward"], xlabel="Steps", ylabel="Episode Rewards", filename="reward.pdf")
