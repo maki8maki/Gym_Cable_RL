@@ -39,6 +39,7 @@
                                     <body name="robot:end_effector" pos="0.0114 0 0" euler="0 -1.57079633 0">
                                         <geom mesh="robot:end_effector" rgba="0 0 0 1" pos="-0.03 -0.03 0" class="end_effector"></geom>
                                         <camera name="robot:camera" pos="0.101 0.009 0.095" euler="0 0 -1.57079633" fovy="58"></camera>
+                                        <camera name="robot:camera_right" pos="0.101 -0.009 0.095" euler="0 0 -1.57079633" fovy="58"></camera>
                                         <site name="robot:end_effector" pos="0.085 0 -0.039" rgba="1 0 1 0" size="0.002"></site>
                                         <body name="robot:ee_adhesion" pos="0.085 0 -0.039">
                                             <geom type="box" size="0.002 0.002 0.002" pos="0 0 0.002" class="end_effector"></geom>

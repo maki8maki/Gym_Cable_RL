@@ -1,5 +1,6 @@
 from typing import Optional
 
+import cv2  # noqa: F401
 import numpy as np
 
 from gym_cable.envs.robot_env import MujocoRobotEnv
@@ -177,9 +178,19 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         # https://www.khronos.org/opengl/wiki/Depth_Buffer_Precision
         depth_image = near / (1 - depth_image * (1 - near / far))
 
-        # Set pixel values outside the range to 0
-        depth_image[(depth_image < self.depth_range[0]) | (depth_image > self.depth_range[1])] = 0
+        # 試し
+        # rgb_image_right = self.mujoco_renderer.render(render_mode="rgb_array", camera_name="robot:camera_right")
+        # gray_left = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2GRAY)
+        # gray_right = cv2.cvtColor(rgb_image_right, cv2.COLOR_RGB2GRAY)
+        # stereo = cv2.StereoBM.create(numDisparities=128, blockSize=5)
+        # disparity = stereo.compute(gray_left, gray_right)
+        # depth_image = np.zeros(shape=gray_left.shape).astype(float)
+        # baseline = 18.0 / 1000
+        # ratio = disparity.shape[1] / 2.0 / np.tan(np.deg2rad(58) / 2)
+        # depth_image[disparity > 0] = (baseline * ratio * 16) / disparity[disparity > 0]
 
+        # Set pixel values outside the range to 0 and Scale [0 255]
+        depth_image[(depth_image < self.depth_range[0]) | (depth_image > self.depth_range[1])] = 0
         depth_image = depth_image / self.depth_range[1] * 255
 
         return (ee_pos, ee_rot, rgb_image, np.expand_dims(depth_image.astype(np.uint8), 2))
