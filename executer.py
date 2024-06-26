@@ -9,7 +9,6 @@ import torch.utils.data as th_data
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-import gym_cable
 from agents.buffer import PrioritizedReplayBuffer
 from agents.utils import Transition
 from config import CombConfig, TrainFEConfig
@@ -56,14 +55,8 @@ class Executer:
 class FEExecuter(Executer):
     def __init__(self, env_name: str, cfg: TrainFEConfig):
         super().__init__()
-        gym_cable.register_robotics_envs()
-        self.env = gym.make(
-            env_name,
-            render_mode="rgb_array",
-            max_episode_steps=cfg.nsteps,
-            position_random=cfg.position_random,
-            posture_random=cfg.posture_random,
-        )
+
+        self.env = cfg.env
         self.writer = SummaryWriter(log_dir=cfg.output_dir)
         self.cfg = cfg
         model_path1 = os.path.join(os.getcwd(), "model", cfg.fe.model_name)
@@ -156,23 +149,13 @@ class FEExecuter(Executer):
 class CombExecuter(Executer):
     def __init__(self, env_name: str, cfg: CombConfig, options=None):
         super().__init__()
-        gym_cable.register_robotics_envs()
-        self.env = gym.make(
-            env_name,
-            render_mode="rgb_array",
-            max_episode_steps=cfg.nsteps,
-            position_random=cfg.position_random,
-            posture_random=cfg.posture_random,
-        )
+
+        self.env = cfg.env
         self.writer = SummaryWriter(log_dir=cfg.output_dir)
-        self.act_space = gym.spaces.Box(
-            low=self.env.action_space.low[: cfg.rl.act_dim], high=self.env.action_space.high[: cfg.rl.act_dim]
-        )
         self.cfg = cfg
         self.options = options
         self.update_count = 1
 
-        self.cfg.fe.model.load_state_dict(th.load(f"./model/{self.cfg.fe.model_name}", map_location=self.cfg.device))
         self.cfg.fe.model.eval()
         self.cfg.rl.model.train()
 
@@ -183,15 +166,13 @@ class CombExecuter(Executer):
             image = np.concatenate([image, normalized_obs[name] * 0.5 + 0.5], axis=2)
         image = th.tensor(self.cfg.fe.trans(image), dtype=th.float, device=self.cfg.device)
         hs = self.cfg.fe.model.forward(image).cpu().squeeze().detach().numpy()
-        state = np.concatenate([hs, normalized_obs["observation"][: self.cfg.rl.obs_dim]])
+        state = np.concatenate([hs, normalized_obs["observation"]])
         return state
 
     def set_action(self, state: np.ndarray, action: np.ndarray) -> Transition:
-        if self.cfg.rl.act_dim < self.env.action_space.shape[0]:
-            action = np.concatenate([action, np.zeros((self.env.action_space.shape[0] - self.cfg.rl.act_dim,))])
         next_obs, reward, terminated, truncated, _ = self.env.step(action)
         next_state = self.obs2state(next_obs)
-        transition = Transition(state, next_state, reward, action[: self.cfg.rl.act_dim], terminated, truncated)
+        transition = Transition(state, next_state, reward, action, terminated, truncated)
         return transition
 
     def train_loop(self, frames: list, titles: list):
@@ -201,7 +182,7 @@ class CombExecuter(Executer):
             if step >= self.cfg.start_steps:
                 action = self.cfg.rl.model.get_action(state)
             else:
-                action = self.act_space.sample()
+                action = self.env.action_space.sample()
             transition = self.set_action(state, action)
 
             ep_rew += transition.reward
@@ -328,7 +309,7 @@ class CLCombExecuter(CombExecuter):
             if step >= self.cfg.start_steps:
                 action = self.cfg.rl.model.get_action(state)
             else:
-                action = self.act_space.sample()
+                action = self.env.action_space.sample()
             transition = self.set_action(state, action)
 
             ep_rew += transition.reward

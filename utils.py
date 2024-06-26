@@ -62,16 +62,14 @@ def obs2state(obs, observation_space, trans=None, image_list=["rgb_image", "dept
         return normalized_obs["observation"]
 
 
-def obs2state_through_fe(
-    obs, observation_space, model, trans, image_list=["rgb_image", "depth_image"], device="cpu", obs_dim=6
-):
+def obs2state_through_fe(obs, observation_space, model, trans, image_list=["rgb_image", "depth_image"], device="cpu"):
     normalized_obs = normalize_state(obs, observation_space)
     image = normalized_obs[image_list[0]]
     for name in image_list[1:]:
         image = np.concatenate([image, normalized_obs[name]], axis=2)
     image = th.tensor(trans(image), dtype=th.float, device=device)
     hs = model.forward(image).cpu().squeeze().detach().numpy()
-    state = np.concatenate([hs, normalized_obs["observation"][:obs_dim]])
+    state = np.concatenate([hs, normalized_obs["observation"]])
     return state
 
 

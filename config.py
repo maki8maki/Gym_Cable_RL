@@ -56,6 +56,8 @@ class FEConfig:
 class TrainFEConfig:
     fe: FEConfig
     basename: str
+    _env: dataclasses.InitVar[dict]
+    env: gym.Env = dataclasses.field(default=None)
     log_name: dataclasses.InitVar[str] = "grasp_rgbd"
     nsteps: int = dataclasses.field(default=100, repr=False)
     position_random: bool = False
@@ -72,7 +74,7 @@ class TrainFEConfig:
     save_recimg_num: int = 10
     output_dir: str = dataclasses.field(default=None)
 
-    def __post_init__(self, log_name, seed):
+    def __post_init__(self, _env, log_name, seed):
         if seed is not None:
             set_seed(seed)
         if self.device == "cpu":
@@ -104,6 +106,10 @@ class TrainFEConfig:
         cfg = dacite.from_dict(data_class=cls, data=OmegaConf.to_container(_cfg))
         cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
         cfg.fe.model.to(cfg.device)
+
+        gym_cable.register_robotics_envs()
+        cfg.env = gym.make(**_cfg._env)
+
         return cfg
 
 
@@ -130,6 +136,8 @@ class CombConfig:
     fe: FEConfig
     rl: RLConfig
     basename: str
+    _env: dataclasses.InitVar[dict]
+    env: gym.Env = dataclasses.field(default=None)
     nsteps: int = dataclasses.field(default=100, repr=False)
     position_random: bool = False
     posture_random: bool = False
@@ -144,11 +152,12 @@ class CombConfig:
     eval_num: int = dataclasses.field(default=100, repr=False)
     device: str = "cpu"
     seed: dataclasses.InitVar[int] = None
-    replay_buffer: buffer.Buffer = buffer.ReplayBuffer(memory_size=memory_size)
+    _replay_buffer: dataclasses.InitVar[dict] = None
+    replay_buffer: buffer.Buffer = dataclasses.field(default=None)
     fe_with_init: dataclasses.InitVar[bool] = True
     output_dir: str = dataclasses.field(default=None)
 
-    def __post_init__(self, seed, fe_with_init):
+    def __post_init__(self, _env, seed, _replay_buffer, fe_with_init):
         if seed is not None:
             set_seed(seed)
         if self.device == "cpu":
@@ -172,7 +181,10 @@ class CombConfig:
             posture_random = "r"
         else:
             posture_random = "s"
+        if _replay_buffer is None:
+            self.replay_buffer = buffer.ReplayBuffer(memory_size=self.memory_size)
         self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
+        self.basename += f"_{position_random}{posture_random}"
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
     @classmethod
@@ -184,8 +196,12 @@ class CombConfig:
         cfg.rl = cfg.rl.convert(OmegaConf.create(_cfg.rl))
         cfg.fe.model.to(cfg.device)
         cfg.rl.model.to(cfg.device)
-        cfg.basename = _cfg.basename + ("_r" if cfg.position_random else "_s") + ("r" if cfg.posture_random else "s")
         cfg.replay_buffer = hydra.utils.instantiate(_cfg._replay_buffer)
+        cfg.fe.model.load_state_dict(th.load(f"./model/{cfg.fe.model_name}", map_location=cfg.device))
+
+        gym_cable.register_robotics_envs()
+        cfg.env = gym.make(**_cfg._env)
+
         return cfg
 
 
@@ -203,14 +219,13 @@ class SB3Config:
     device: str = "cpu"
     total_steps: int = 5e5
     seed: int = None
-    # save_anim_num: int = dataclasses.field(default=10, repr=False)
     nevalepisodes: int = 5
     eval_num: int = 1000
     model: BaseAlgorithm = dataclasses.field(default=None)
     callbacks: CallbackList = dataclasses.field(default=None, repr=False)
     output_dir: str = dataclasses.field(default=None)
 
-    def __post_init__(self, fe_with_init, _env, _model):
+    def __post_init__(self, _env, _model, fe_with_init):
         if self.seed is not None:
             set_seed(self.seed)
         if self.device == "cpu":
@@ -241,12 +256,7 @@ class SB3Config:
         cfg.fe.model.load_state_dict(th.load(f"./model/{cfg.fe.model_name}", map_location=cfg.device))
 
         gym_cable.register_robotics_envs()
-        env = gym.make(
-            max_episode_steps=cfg.nsteps,
-            position_random=cfg.position_random,
-            posture_random=cfg.posture_random,
-            **_cfg._env,
-        )
+        env = gym.make(**_cfg._env)
         cfg.env = FEWrapper(env=env, model=cfg.fe.model, trans=cfg.fe.trans)
         cfg.model = hydra.utils.instantiate(
             _cfg._model, env=cfg.env, tensorboard_log=cfg.output_dir, seed=cfg.seed, device=cfg.device
