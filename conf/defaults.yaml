@@ -1,11 +1,22 @@
 defaults:
   - fe: defaults
-  - rl: defaults
   - _self_
 
 hydra:
   run:
     dir: logs/${basename}/${now:%Y%m%d-%H%M}
+
+_env:
+  id: MZ04CableGrasp-v0
+  render_mode: rgb_array
+  max_episode_steps: ${nsteps}
+  position_random: ${position_random}
+  posture_random: ${posture_random}
+
+_model:
+  _target_: agents.SAC.SAC
+  gamma: 0.7
+  lr: 1e-3
 
 memory_size: 10000
 nsteps: 100
@@ -15,16 +26,15 @@ start_steps: 10000
 total_steps: 500000
 nevalepisodes: 5
 update_after: 1000
-update_every: 50
+update_every: 1
 batch_size: 50
-save_anim_num: 10
-eval_num: 100
+eval_num: 1000
 device: cuda
 seed: 42
 _replay_buffer:
   _target_: agents.buffer.ReplayBuffer
   memory_size: ${memory_size}
 
-basename: SAC_trainedDCAE_o-${rl.obs_dim}_a-${rl.act_dim}
+basename: SAC_trainedDCAE
 
 fe_with_init: True
