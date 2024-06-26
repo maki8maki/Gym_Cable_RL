@@ -1,6 +1,6 @@
 # for stl file
-*.stl
-*.obj
+MZ04*.stl
+MZ04*.obj
 
 # for imported python file
 *.pyc
