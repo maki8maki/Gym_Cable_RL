@@ -134,10 +134,11 @@ class RLConfig:
 @dataclasses.dataclass
 class CombConfig:
     fe: FEConfig
-    rl: RLConfig
     basename: str
     _env: dataclasses.InitVar[dict]
     env: gym.Env = dataclasses.field(default=None)
+    _model: dataclasses.InitVar[dict] = None
+    model: utils.RL = dataclasses.field(default=None)
     nsteps: int = dataclasses.field(default=100, repr=False)
     position_random: bool = False
     posture_random: bool = False
@@ -148,8 +149,7 @@ class CombConfig:
     update_after: int = 1000
     update_every: int = 50
     batch_size: int = 50
-    save_anim_num: int = dataclasses.field(default=10, repr=False)
-    eval_num: int = dataclasses.field(default=100, repr=False)
+    eval_num: int = 1000
     device: str = "cpu"
     seed: dataclasses.InitVar[int] = None
     _replay_buffer: dataclasses.InitVar[dict] = None
@@ -157,7 +157,7 @@ class CombConfig:
     fe_with_init: dataclasses.InitVar[bool] = True
     output_dir: str = dataclasses.field(default=None)
 
-    def __post_init__(self, _env, seed, _replay_buffer, fe_with_init):
+    def __post_init__(self, _env, _model, seed, _replay_buffer, fe_with_init):
         if seed is not None:
             set_seed(seed)
         if self.device == "cpu":
@@ -165,10 +165,6 @@ class CombConfig:
         if self.device == "cuda" and not th.cuda.is_available():
             self.device = "cpu"
             logging.warning("Device changed to CPU!!")
-        if self.fe.model is not None:
-            self.fe.model.to(self.device)
-        if self.rl.model is not None:
-            self.rl.model.to(self.device)
         if fe_with_init:
             init = "w-init"
         else:
@@ -190,17 +186,20 @@ class CombConfig:
     @classmethod
     def convert(cls, _cfg: OmegaConf):
         cfg = dacite.from_dict(data_class=cls, data=OmegaConf.to_container(_cfg))
+
         cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
-        if _cfg.rl._model:
-            _cfg.rl._model.obs_dim = cfg.rl.obs_dim + cfg.fe.hidden_dim
-        cfg.rl = cfg.rl.convert(OmegaConf.create(_cfg.rl))
         cfg.fe.model.to(cfg.device)
-        cfg.rl.model.to(cfg.device)
-        cfg.replay_buffer = hydra.utils.instantiate(_cfg._replay_buffer)
         cfg.fe.model.load_state_dict(th.load(f"./model/{cfg.fe.model_name}", map_location=cfg.device))
 
         gym_cable.register_robotics_envs()
-        cfg.env = gym.make(**_cfg._env)
+        env = gym.make(**_cfg._env)
+        cfg.env = FEWrapper(env=env, model=cfg.fe.model, trans=cfg.fe.trans)
+
+        obs_dim = cfg.env.observation_space.low.size
+        act_dim = cfg.env.action_space.low.size
+        cfg.model = hydra.utils.instantiate(_cfg._model, obs_dim=obs_dim, act_dim=act_dim)
+        cfg.model.to(cfg.device)
+        cfg.replay_buffer = hydra.utils.instantiate(_cfg._replay_buffer)
 
         return cfg
 

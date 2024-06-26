@@ -14,7 +14,7 @@ def main(_cfg: OmegaConf):
     if not yes_no_input("fe.model_name and basename"):
         exit()
 
-    executer = CombExecuter(env_name="MZ04CableGrasp-v0", cfg=cfg)
+    executer = CombExecuter(cfg=cfg)
     del cfg, _cfg
 
     executer()

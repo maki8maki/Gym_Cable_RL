@@ -18,8 +18,25 @@ from utils import EarlyStopping, anim, check_freq
 class Executer:
     env: gym.Env
     cfg: Union[CombConfig, TrainFEConfig]
-    options: dict = None
     writer: SummaryWriter
+
+    def close(self):
+        self.env.close()
+        self.writer.flush()
+        self.writer.close()
+
+
+class FEExecuter(Executer):
+    def __init__(self, cfg: TrainFEConfig):
+        super().__init__()
+
+        self.env = cfg.env
+        self.writer = SummaryWriter(log_dir=cfg.output_dir)
+        self.cfg = cfg
+        model_path1 = os.path.join(os.getcwd(), "model", cfg.fe.model_name)
+        model_path2 = os.path.join(cfg.output_dir, cfg.fe.model_name)
+        self.es = EarlyStopping(patience=self.cfg.es_patience, paths=[model_path1, model_path2], trace_func=tqdm.write)
+        self.cfg.fe.model.train()
 
     def normalize_state(self, state):
         # 連続値の状態を[-1,1]の範囲に正規化
@@ -42,27 +59,9 @@ class Executer:
             return normalized_obs["observation"]
 
     def reset_get_state(self):
-        obs, _ = self.env.reset(options=self.options)
+        obs, _ = self.env.reset()
         state = self.obs2state(obs)
         return state
-
-    def close(self):
-        self.env.close()
-        self.writer.flush()
-        self.writer.close()
-
-
-class FEExecuter(Executer):
-    def __init__(self, env_name: str, cfg: TrainFEConfig):
-        super().__init__()
-
-        self.env = cfg.env
-        self.writer = SummaryWriter(log_dir=cfg.output_dir)
-        self.cfg = cfg
-        model_path1 = os.path.join(os.getcwd(), "model", cfg.fe.model_name)
-        model_path2 = os.path.join(cfg.output_dir, cfg.fe.model_name)
-        self.es = EarlyStopping(patience=self.cfg.es_patience, paths=[model_path1, model_path2], trace_func=tqdm.write)
-        self.cfg.fe.model.train()
 
     def gathering_data(self):
         data_path = os.path.join(os.getcwd(), "data", self.cfg.data_name)
@@ -147,40 +146,28 @@ class FEExecuter(Executer):
 
 
 class CombExecuter(Executer):
-    def __init__(self, env_name: str, cfg: CombConfig, options=None):
+    def __init__(self, cfg: CombConfig):
         super().__init__()
 
         self.env = cfg.env
         self.writer = SummaryWriter(log_dir=cfg.output_dir)
         self.cfg = cfg
-        self.options = options
         self.update_count = 1
 
         self.cfg.fe.model.eval()
-        self.cfg.rl.model.train()
-
-    def obs2state(self, obs, image_list=["rgb_image", "depth_image"]):
-        normalized_obs = self.normalize_state(obs)
-        image = normalized_obs[image_list[0]] * 0.5 + 0.5
-        for name in image_list[1:]:
-            image = np.concatenate([image, normalized_obs[name] * 0.5 + 0.5], axis=2)
-        image = th.tensor(self.cfg.fe.trans(image), dtype=th.float, device=self.cfg.device)
-        hs = self.cfg.fe.model.forward(image).cpu().squeeze().detach().numpy()
-        state = np.concatenate([hs, normalized_obs["observation"]])
-        return state
+        self.cfg.model.train()
 
     def set_action(self, state: np.ndarray, action: np.ndarray) -> Transition:
-        next_obs, reward, terminated, truncated, _ = self.env.step(action)
-        next_state = self.obs2state(next_obs)
+        next_state, reward, terminated, truncated, _ = self.env.step(action)
         transition = Transition(state, next_state, reward, action, terminated, truncated)
         return transition
 
     def train_loop(self, frames: list, titles: list):
-        state = self.reset_get_state()
+        state, _ = self.env.reset()
         ep_rew, ep_len = 0, 0
         for step in tqdm(range(self.cfg.total_steps)):
             if step >= self.cfg.start_steps:
-                action = self.cfg.rl.model.get_action(state)
+                action = self.cfg.model.get_action(state)
             else:
                 action = self.env.action_space.sample()
             transition = self.set_action(state, action)
@@ -195,7 +182,7 @@ class CombExecuter(Executer):
             if transition.done or is_timeout:
                 self.writer.add_scalar("train/episode_reward", ep_rew, step)
                 self.writer.add_scalar("train/episode_length", ep_len, step)
-                state = self.reset_get_state()
+                state, _ = self.env.reset()
                 ep_rew, ep_len = 0, 0
             else:
                 state = transition.next_state
@@ -205,31 +192,31 @@ class CombExecuter(Executer):
                     num = step + 1 - (self.cfg.update_every - upc)
                     if isinstance(self.cfg.replay_buffer, PrioritizedReplayBuffer):
                         batch = self.cfg.replay_buffer.sample(self.cfg.batch_size, num)
-                        loss = self.cfg.rl.model.update_from_batch(batch)
+                        loss = self.cfg.model.update_from_batch(batch)
                         self.cfg.replay_buffer.update_priority(loss.flatten())
                     else:
                         batch = self.cfg.replay_buffer.sample(self.cfg.batch_size)
-                        _ = self.cfg.rl.model.update_from_batch(batch)
-                    for key in self.cfg.rl.model.info.keys():
-                        self.writer.add_scalar("train/" + key, self.cfg.rl.model.info[key], num)
+                        _ = self.cfg.model.update_from_batch(batch)
+                    for key in self.cfg.model.info.keys():
+                        self.writer.add_scalar("train/" + key, self.cfg.model.info[key], num)
 
             if check_freq(self.cfg.total_steps, step, self.cfg.eval_num):
                 self.eval_loop(step, frames, titles)
-                self.cfg.rl.model.train()
+                self.cfg.model.train()
 
     def eval_loop(self, cur_step: int, frames: list, titles: list):
-        self.cfg.rl.model.eval()
+        self.cfg.model.eval()
         eval_reward = 0.0
         steps = 0.0
         success_num = 0.0
         for evalepisode in range(self.cfg.nevalepisodes):
             save_frames = evalepisode == 0
-            state = self.reset_get_state()
+            state, _ = self.env.reset()
             if save_frames:
                 frames.append(self.env.render())
                 titles.append(f"Step {cur_step+1}")
             for step in range(self.cfg.nsteps):
-                action = self.cfg.rl.model.get_action(state, deterministic=True)
+                action = self.cfg.model.get_action(state, deterministic=True)
                 transition = self.set_action(state, action)
                 eval_reward += transition.reward
                 if save_frames:
@@ -247,12 +234,12 @@ class CombExecuter(Executer):
         self.writer.add_scalar("test/success_rate", success_num / self.cfg.nevalepisodes, cur_step + 1)
 
     def test_loop(self, frames: list, titles: list):
-        self.cfg.rl.model.eval()
-        state = self.reset_get_state()
+        self.cfg.model.eval()
+        state, _ = self.env.reset()
         frames.append(self.env.render())
         titles.append("Step 0")
         for step in range(self.cfg.nsteps):
-            action = self.cfg.rl.model.get_action(state, deterministic=True)
+            action = self.cfg.model.get_action(state, deterministic=True)
             transition = self.set_action(state, action)
             frames.append(self.env.render())
             titles.append(f"Step {step+1}")
@@ -267,10 +254,10 @@ class CombExecuter(Executer):
         anim_path = os.path.join(self.cfg.output_dir, f"{self.cfg.basename}-1.mp4")
         try:
             self.cfg.fe.model.eval()
-            self.cfg.rl.model.train()
+            self.cfg.model.train()
             self.train_loop(frames=frames, titles=titles)
         except KeyboardInterrupt:
-            self.cfg.rl.model.save(os.path.join(self.cfg.output_dir, f"{self.cfg.basename}.pth"))
+            self.cfg.model.save(os.path.join(self.cfg.output_dir, f"{self.cfg.basename}.pth"))
             anim(frames, titles=titles, filename=anim_path, show=False)
             sys.exit(1)
         anim(frames, titles=titles, filename=anim_path, show=False)
@@ -283,8 +270,8 @@ class CombExecuter(Executer):
         anim(
             frames, titles=titles, filename=os.path.join(self.cfg.output_dir, f"{self.cfg.basename}-2.mp4"), show=False
         )
-        self.cfg.rl.model.save(os.path.join(os.getcwd(), "model", f"{self.cfg.basename}.pth"))
-        self.cfg.rl.model.save(os.path.join(self.cfg.output_dir, f"{self.cfg.basename}.pth"))
+        self.cfg.model.save(os.path.join(os.getcwd(), "model", f"{self.cfg.basename}.pth"))
+        self.cfg.model.save(os.path.join(self.cfg.output_dir, f"{self.cfg.basename}.pth"))
 
     def __call__(self):
         self.train()
@@ -307,7 +294,7 @@ class CLCombExecuter(CombExecuter):
                 idx = min(idx + 1, len(self.cl_scheduler) - 1)
 
             if step >= self.cfg.start_steps:
-                action = self.cfg.rl.model.get_action(state)
+                action = self.cfg.model.get_action(state)
             else:
                 action = self.env.action_space.sample()
             transition = self.set_action(state, action)
@@ -332,14 +319,14 @@ class CLCombExecuter(CombExecuter):
                     num = step + 1 - (self.cfg.update_every - upc)
                     if isinstance(self.cfg.replay_buffer, PrioritizedReplayBuffer):
                         batch = self.cfg.replay_buffer.sample(self.cfg.batch_size, num)
-                        loss = self.cfg.rl.model.update_from_batch(batch)
+                        loss = self.cfg.model.update_from_batch(batch)
                         self.cfg.replay_buffer.update_priority(loss.flatten())
                     else:
                         batch = self.cfg.replay_buffer.sample(self.cfg.batch_size)
-                        _ = self.cfg.rl.model.update_from_batch(batch)
-                    for key in self.cfg.rl.model.info.keys():
-                        self.writer.add_scalar("train/" + key, self.cfg.rl.model.info[key], num)
+                        _ = self.cfg.model.update_from_batch(batch)
+                    for key in self.cfg.model.info.keys():
+                        self.writer.add_scalar("train/" + key, self.cfg.model.info[key], num)
 
             if check_freq(self.cfg.total_steps, step, self.cfg.eval_num):
                 self.eval_loop(step, frames, titles)
-                self.cfg.rl.model.train()
+                self.cfg.model.train()

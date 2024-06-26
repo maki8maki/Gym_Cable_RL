@@ -14,7 +14,7 @@ def main(_cfg: OmegaConf):
     if not yes_no_input("fe.model_name, basename and data_name"):
         exit()
 
-    executer = FEExecuter(env_name="MZ04CableGrasp-v0", cfg=cfg)
+    executer = FEExecuter(cfg=cfg)
     del cfg, _cfg
 
     executer()
