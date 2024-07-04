@@ -160,7 +160,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         self.ik_success = self._utils.ik_set_action(self.model, self.data, action, self.site_name, self.joint_names)
 
     def generate_mujoco_observations(self):
-        # positions and rotation(eular)
+        # positions and rotation(euler)
         ee_pos = self._utils.get_site_xpos(self.model, self.data, "robot:end_effector")
         ee_rot = rotations.mat2euler(self._utils.get_site_xmat(self.model, self.data, "robot:end_effector"))
 
