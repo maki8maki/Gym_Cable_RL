@@ -1,10 +1,12 @@
 defaults:
-  - fe: ../../fe/defaults
+  - fe: vae
   - _self_
 
 hydra:
   run:
     dir: logs/${basename}/${now:%Y%m%d-%H%M}
+
+basename: SB3_SAC_trainedVAE
 
 _env:
   id: MZ04CableGrasp-v0
@@ -12,24 +14,20 @@ _env:
   max_episode_steps: ${nsteps}
   position_random: ${position_random}
   posture_random: ${posture_random}
-  with_hand: False
+  with_hand: ${with_hand}
 
-basename: DCAE
-log_name: grasp_rgbd
+_model:
+  _target_: stable_baselines3.SAC
+  policy: MlpPolicy
+  verbose: 0
 
 nsteps: 100
 position_random: False
 posture_random: False
-
-batch_size: 128
-nepochs: 1000
-es_patience: 100
-
+with_hand: False
+fe_with_init: True
 device: cuda
+total_steps: 500000
 seed: 42
-
-gathering_data: True
-with_init: False
-data_size: 10000
-
-save_recimg_num: 10
+nevalepisodes: 5
+eval_num: 1000

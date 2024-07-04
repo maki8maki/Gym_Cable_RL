@@ -142,6 +142,7 @@ class CombConfig:
     nsteps: int = dataclasses.field(default=100, repr=False)
     position_random: bool = False
     posture_random: bool = False
+    with_hand: bool = False
     memory_size: int = 10000
     start_steps: int = 10000
     total_steps: int = 5e5
@@ -177,10 +178,14 @@ class CombConfig:
             posture_random = "r"
         else:
             posture_random = "s"
+        if self.with_hand:
+            with_hand = "t"
+        else:
+            with_hand = "f"
         if _replay_buffer is None:
             self.replay_buffer = buffer.ReplayBuffer(memory_size=self.memory_size)
         self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
-        self.basename += f"_{position_random}{posture_random}"
+        self.basename += f"_{position_random}{posture_random}{with_hand}"
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
     @classmethod
@@ -214,6 +219,7 @@ class SB3Config:
     nsteps: int = dataclasses.field(default=100, repr=False)
     position_random: bool = False
     posture_random: bool = False
+    with_hand: bool = False
     fe_with_init: dataclasses.InitVar[bool] = True
     device: str = "cpu"
     total_steps: int = 5e5

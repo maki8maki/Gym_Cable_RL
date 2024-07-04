@@ -11,7 +11,7 @@ MUJOCO_LOG.TXT
 # for params
 conf/*.yaml
 conf/*/*.yaml
-!conf/*/defaults.yaml
+!conf/**/defaults*.yaml
 model/*
 !model/.gitkeep
 
