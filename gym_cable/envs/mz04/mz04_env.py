@@ -7,10 +7,10 @@ from gym_cable.envs.robot_env import MujocoRobotEnv
 from gym_cable.utils import rotations
 
 DEFAULT_CAMERA_CONFIG = {
-    "distance": 1.0,
-    "azimuth": 132.0,
-    "elevation": -20.0,
-    "lookat": np.array([0.35, 0.0, 0.3]),
+    "distance": 0.8,
+    "azimuth": 135.0,
+    "elevation": -30.0,
+    "lookat": np.array([0.25, 0.0, 0.5]),
 }
 
 
@@ -210,7 +210,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
             diff = self.np_random.uniform(-self.obj_position_range, self.obj_position_range)
             circuit_pos = np.copy(self.initial_circuit_pos)
             circuit_pos[1] += diff
-            self._utils.set_joint_qpos(self.model, self.data, "circuit:joint", circuit_pos)
+            self.model.body("fixing").pos = circuit_pos
             self.model.body("B_first").pos = np.copy(self.initial_cable_pos)
             self.model.body("B_first").pos[1] += diff
         if self.posture_random:

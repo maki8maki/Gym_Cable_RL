@@ -1,12 +1,15 @@
 <mujoco>
     <default>
+        <default class="visual">
+            <geom group="2" type="mesh" contype="0" conaffinity="0"/>
+        </default>
+        <default class="collision">
+            <geom group="3" type="mesh"/>
+        </default>
         <default class="mz04">
-            <geom margin="0.001" rgba="1 1 1 1" solimp="0.99 0.99 0.01" solref="0.01 1" type="mesh" user="0"></geom>
-            <joint limited="true" range="-3.1415 3.1415" type="hinge" armature="1" damping="50" frictionloss="0" stiffness="0"></joint>
-            <default class="visual">
-                <geom type="mesh" contype="0" conaffinity="0" group="2"/>
-            </default>
-            <default class="end_effector">
+            <geom margin="0.001" rgba="1 1 1 0" solimp="0.99 0.99 0.01" solref="0.01 1" type="mesh" user="0"></geom>
+            <joint limited="true" range="-180 180" type="hinge" armature="1" damping="50" frictionloss="0" stiffness="0"></joint>
+            <default class="mz04:end_effector">
                 <geom rgba="0 0 0 1"></geom>
             </default>
         </default>
@@ -21,7 +24,22 @@
     </default>
 
     <asset>
-        <material name="floor_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.2 0.2 0.2 1"></material>
+        <texture type="2d" name="floor_mat" file="floor.png"/>
+        <material name="floor_mat" texture="floor_mat" specular="1.0" shininess="0.5"/>
+
+        <!-- robot -->
+        <material name="Opaque(60,60,60)" specular="0.5" shininess="0.5" rgba="0.235294 0.235294 0.235294 1.0"/>
+        <material name="Opaque(34,34,34)" specular="0.5" shininess="0.5" rgba="0.133333 0.133333 0.133333 1.0"/>
+        <material name="Opaque(191,191,191)" specular="0.5" shininess="0.5" rgba="0.749020 0.749020 0.749020 1.0"/>
+        <material name="Opaque(114,127,127)" specular="0.5" shininess="0.5" rgba="0.447059 0.498039 0.498039 1.0"/>
+        <material name="Opaque(216,216,216)" specular="0.5" shininess="0.5" rgba="0.847059 0.847059 0.847059 1.0"/>
+        <material name="Opaque(255,200,0)" specular="0.5" shininess="0.5" rgba="1.000000 0.784314 0.000000 1.0"/>
+        <material name="Opaque(255,0,0)" specular="0.5" shininess="0.5" rgba="1.000000 0.000000 0.000000 1.0"/>
+        <material name="plastic_black" specular="0.5" shininess="0.5" rgba="0.098039 0.098039 0.098039 1.0"/>
+        <material name="Opaque(203,210,238)" specular="0.5" shininess="0.5" rgba="0.796078 0.823529 0.933333 1.0"/>
+        <material name="Opaque(255,239,173)" specular="0.5" shininess="0.5" rgba="1.000000 0.937255 0.678431 1.0"/>
+        <material name="Opaque(63,63,63)" specular="0.5" shininess="0.5" rgba="0.250980 0.250980 0.250980 1.0"/>
+        <material name="Opaque(176,176,176)" specular="0.5" shininess="0.5" rgba="0.690196 0.690196 0.690196 1.0"/>
 
         <mesh file="MZ04-01_BASE.stl" name="robot:base_link"></mesh>
         <mesh file="MZ04-01_J1.stl" name="robot:j1_link"></mesh>
@@ -32,18 +50,42 @@
         <mesh file="MZ04-01_J6.stl" name="robot:j6_link"></mesh>
         <mesh file="EndEffector.stl" name="robot:end_effector"></mesh>
 
-        <mesh file="MZ04-01_BASE.obj"></mesh>
-        <mesh file="MZ04-01_J1.obj"></mesh>
-        <mesh file="MZ04-01_J2.obj"></mesh>
-        <mesh file="MZ04-01_J3.obj"></mesh>
-        <mesh file="MZ04-01_J4.obj"></mesh>
-        <mesh file="MZ04-01_J5.obj"></mesh>
-        <mesh file="MZ04-01_J6.obj"></mesh>
-    </asset>
+        <mesh file="MZ04-Base_0.obj"/>
+        <mesh file="MZ04-Base_1.obj"/>
+        <mesh file="MZ04-Base_2.obj"/>
+        <mesh file="MZ04-J1_0.obj"/>
+        <mesh file="MZ04-J1_1.obj"/>
+        <mesh file="MZ04-J2_0.obj"/>
+        <mesh file="MZ04-J2_1.obj"/>
+        <mesh file="MZ04-J3_0.obj"/>
+        <mesh file="MZ04-J3_1.obj"/>
+        <mesh file="MZ04-J4_0.obj"/>
+        <mesh file="MZ04-J4_1.obj"/>
+        <mesh file="MZ04-J5_0.obj"/>
+        <mesh file="MZ04-J5_1.obj"/>
+        <mesh file="MZ04-J6_0.obj"/>
+        <mesh file="MZ04-J6_1.obj"/>
+        <mesh file="EndEffector_0.obj"/>
+        <mesh file="EndEffector_1.obj"/>
+        <mesh file="EndEffector_2.obj"/>
+        <mesh file="EndEffector_3.obj"/>
+        <mesh file="EndEffector_4.obj"/>
 
-    <equality>
-        <weld body1="robot:mocap" body2="robot:ee_adhesion" solimp="0.9 0.95 0.001" solref="0.02 1"></weld>
-    </equality>
+        <!-- pallet -->
+        <texture type="2d" name="wood" file="Wood073_2K-JPG_Color.png"/>
+        <material name="wood" texture="wood" specular="1.0" shininess="0.5"/>
+        <mesh file="pallet.obj"/>
+
+        <!-- stand -->
+        <material name="legs" specular="0.5" shininess="0.5" rgba="0.960784 0.960784 0.964706 1.0"/>
+        <material name="panel" specular="0.5" shininess="0.5" rgba="0.172549 0.172549 0.172549 1.0"/>
+        <mesh file="stand_panel.obj"/>
+        <mesh file="stand_legs.obj"/>
+
+        <!-- fixing -->
+        <material name="fixing" specular="0.5" shininess="0.5" rgba="0.768627 0.207843 0.152941 1.0"/>
+        <mesh file="fixing.obj"/>
+    </asset>
 
     <contact>
         <exclude body1="robot:base" body2="robot:j1_link"></exclude>
