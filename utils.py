@@ -35,55 +35,6 @@ def anim(frames, titles=None, filename=None, show=True, interval=50):
         plt.show()
 
 
-def normalize_state(state, observation_space):
-    # 連続値の状態を[-1,1]の範囲に正規化
-    if isinstance(state, dict):
-        normalized_state = {}
-        for key in state.keys():
-            state_mean = 0.5 * (observation_space[key].high + observation_space[key].low)
-            state_halfwidth = 0.5 * (observation_space[key].high - observation_space[key].low)
-            normalized_state[key] = ((state[key].astype(np.float32) - state_mean) / state_halfwidth).astype(np.float32)
-    else:
-        state_mean = 0.5 * (observation_space.high + observation_space.low)
-        state_halfwidth = 0.5 * (observation_space.high - observation_space.low)
-        normalized_state = ((state.astype(np.float32) - state_mean) / state_halfwidth).astype(np.float32)
-    return normalized_state
-
-
-def obs2state(obs, observation_space, trans=None, image_list=["rgb_image", "depth_image"]):
-    normalized_obs = normalize_state(obs, observation_space)
-    if len(image_list) > 0:
-        image = normalized_obs[image_list[0]]
-        for name in image_list[1:]:
-            image = np.concatenate([image, normalized_obs[name]], axis=2)
-        state = {"observation": normalized_obs["observation"], "image": trans(image)}
-        return state
-    else:
-        return normalized_obs["observation"]
-
-
-def obs2state_through_fe(obs, observation_space, model, trans, image_list=["rgb_image", "depth_image"], device="cpu"):
-    normalized_obs = normalize_state(obs, observation_space)
-    image = normalized_obs[image_list[0]]
-    for name in image_list[1:]:
-        image = np.concatenate([image, normalized_obs[name]], axis=2)
-    image = th.tensor(trans(image), dtype=th.float, device=device)
-    hs = model.forward(image).cpu().squeeze().detach().numpy()
-    state = np.concatenate([hs, normalized_obs["observation"]])
-    return state
-
-
-def return_transition(state, next_state, reward, action, terminated, truncated):
-    return {
-        "state": state,
-        "next_state": next_state,
-        "reward": reward,
-        "action": action,
-        "success": terminated,
-        "done": int(terminated or truncated),  # エピソードの終了（成功、失敗）
-    }
-
-
 def yes_no_input(check):
     while True:
         print("\n### Please check \033[31m" + check + "\033[0m ###")
