@@ -17,4 +17,4 @@ dill
 imageio
 PyQt6
 
-stable-baselines3
+stable-baselines3[extra]
