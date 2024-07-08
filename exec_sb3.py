@@ -31,7 +31,7 @@ def main(_cfg: OmegaConf):
             frames.append(env.render())
             titles.append(f"Step {step+1}")
             if terminated or truncated:
-                if truncated:
+                if terminated:
                     success_num += 1
                 break
             else:
