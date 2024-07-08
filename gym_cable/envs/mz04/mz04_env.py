@@ -104,19 +104,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             options: Optional[dict] = None,
         ):
             obs, info = super().reset(seed=seed)
-            if options is not None:
-                try:
-                    r = 1 - options["diff_ratio"]
-                    assert 0 <= r and r <= 1
-                    pos_c, quat_c = obs["observation"][:3], rotations.euler2quat(obs["observation"][3:])
-                    pos_g, quat_g = self.goal[:3], rotations.euler2quat(self.goal[3:])
-                    pos_t = (1 - r) * pos_c + r * pos_g
-                    quat_t = rotations.quat_slerp(quat_c, quat_g, r)
-                    _ = self._utils.set_site_to_xpos(
-                        self.model, self.data, self.site_name, self.joint_names, pos_t, quat_t
-                    )
-                except Exception as e:
-                    print(e)
+
             obs = self._get_obs()
             if self.render_mode == "human":
                 self.render()
@@ -262,9 +250,3 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         for name, value in initial_qpos.items():
             self._utils.set_joint_qpos(self.model, self.data, name, value)
         self._mujoco.mj_forward(self.model, self.data)
-
-    def set_threshold(self, distance_threshold=None, rotation_threshold=None):
-        if distance_threshold is not None:
-            self.distance_threshold = distance_threshold
-        if rotation_threshold is not None:
-            self.rotation_threshold = rotation_threshold
