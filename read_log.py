@@ -72,4 +72,4 @@ if __name__ == "__main__":
     log_dir = "logs/VAE/20240619-1400"
     tagnames = ["depth/500_reconstructed", "rgb/500_reconstructed", "depth/500_original", "rgb/500_original"]
     show_image(log_dir, tagnames, is_save=True)
-    # plot(log_dir, tagnames=["eval/mean_reward"], xlabel="Steps", ylabel="Episode Rewards", filename="reward.pdf")
+    # plot(log_dir, ["eval/mean_reward"], xlabel="Steps", ylabel="Episode Rewards", filename="logs/reward.pdf")
