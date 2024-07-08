@@ -24,15 +24,15 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
 
         def __init__(
             self,
-            target_offset,
-            obj_position_range,
-            obj_posture_range,
-            position_random,
-            posture_random,
-            distance_threshold,
-            rotation_threshold,
-            rot_weight,
-            with_hand,
+            target_offset: np.ndarray,
+            obj_position_range: float,
+            obj_posture_range: float,
+            position_random: bool,
+            posture_random: bool,
+            distance_threshold: float,
+            rotation_threshold: float,
+            rot_weight: float,
+            with_hand: bool,
             **kwargs,
         ):
             """Initializes a new MZ04 environment.
@@ -68,7 +68,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
         # GoalEnv methods
         # ----------------------------
 
-        def compute_reward(self, obs, goal, info):
+        def compute_reward(self, obs: np.ndarray, goal: np.ndarray, info: dict):
             if self.terminated:
                 reward = 10
             elif self.truncated:
@@ -79,7 +79,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
                 reward = -err_norm
             return reward
 
-        def compute_terminated(self, obs, goal, info):
+        def compute_terminated(self, obs: np.ndarray, goal: np.ndarray, info: dict):
             terminated = super().compute_terminated(obs, goal, info)
             if self.with_hand:
                 is_near = info["is_success"]
@@ -87,7 +87,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
                 terminated = terminated and hand_ok
             return terminated
 
-        def compute_truncated(self, obs, goal, info):
+        def compute_truncated(self, obs: np.ndarray, goal: np.ndarray, info: dict):
             truncated = super().compute_truncated(obs, goal, info)
             if self.with_hand:
                 is_not_near = not info["is_success"]
@@ -129,7 +129,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
         # RobotEnv methods
         # ----------------------------
 
-        def _set_action(self, action):
+        def _set_action(self, action: np.ndarray):
             assert action.shape == (6,)
             action = action.copy()  # ensure that we don't change the action outside of this scope
             pos_ctrl, rot_ctrl = action[:3], action[3:]
@@ -165,7 +165,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             goal_rot = rotations.mat2euler(cable_end_mat)
             return np.concatenate([goal_pos, goal_rot])
 
-        def _is_success(self, obs, goal):
+        def _is_success(self, obs: np.ndarray, goal: np.ndarray):
             position_err, posture_err = self._utils.calc_err_norm(obs, goal)
             return (position_err < self.distance_threshold) and (posture_err < self.rotation_threshold)
 
@@ -173,7 +173,13 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
 
 
 class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
-    def __init__(self, site_name, joint_names, default_camera_config: dict = DEFAULT_CAMERA_CONFIG, **kwargs):
+    def __init__(
+        self,
+        site_name: str,
+        joint_names: list[str],
+        default_camera_config: dict = DEFAULT_CAMERA_CONFIG,
+        **kwargs,
+    ):
         super().__init__(default_camera_config=default_camera_config, **kwargs)
 
         self.site_name = site_name
@@ -182,7 +188,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
     def _step_callback(self):
         self._mujoco.mj_forward(self.model, self.data)
 
-    def _set_action(self, action):
+    def _set_action(self, action: np.ndarray):
         if self.with_hand:
             self.hand_on = action[-1] >= 0
             action = action[:6]
@@ -252,7 +258,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         self._mujoco.mj_forward(self.model, self.data)
         return True
 
-    def _env_setup(self, initial_qpos):
+    def _env_setup(self, initial_qpos: dict[str, float]):
         for name, value in initial_qpos.items():
             self._utils.set_joint_qpos(self.model, self.data, name, value)
         self._mujoco.mj_forward(self.model, self.data)

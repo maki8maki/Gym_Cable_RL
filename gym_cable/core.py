@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import Optional
 
 import gymnasium as gym
+import numpy as np
 from gymnasium import error
 
 
@@ -23,13 +24,13 @@ class GoalEnv(gym.Env):
                 )
 
     @abstractmethod
-    def compute_reward(self, obs, goal, info):
+    def compute_reward(self, obs: np.ndarray, goal: np.ndarray, info: dict):
         raise NotImplementedError
 
     @abstractmethod
-    def compute_terminated(self, obs, goal, info):
+    def compute_terminated(self, obs: np.ndarray, goal: np.ndarray, info: dict):
         raise NotImplementedError
 
     @abstractmethod
-    def compute_truncated(self, obs, goal, info):
+    def compute_truncated(self, obs: np.ndarray, goal: np.ndarray, info: dict):
         raise NotImplementedError

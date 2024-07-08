@@ -32,12 +32,12 @@ IKResult = collections.namedtuple("IKResult", ["qpos", "err_norm", "steps", "suc
 DOWN_QUATERNION = np.array([0.0, 0.70710678118, 0.70710678118, 0.0])
 
 
-def goal_distance(goal_a, goal_b):
+def goal_distance(goal_a: np.ndarray, goal_b: np.ndarray):
     assert goal_a.shape == goal_b.shape
     return np.linalg.norm(goal_a - goal_b, axis=-1)
 
 
-def calc_err_norm(cur, goal):
+def calc_err_norm(cur: np.ndarray, goal: np.ndarray):
     assert cur.shape == goal.shape
     assert cur.shape[-1] == 6
     position_err = goal_distance(goal[:3], cur[:3])

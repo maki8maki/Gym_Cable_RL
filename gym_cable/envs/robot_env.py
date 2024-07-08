@@ -79,10 +79,10 @@ class BaseRobotEnv(GoalEnv):
 
     # Env methods
     # ----------------------------
-    def compute_terminated(self, obs, goal, info):
+    def compute_terminated(self, obs: np.ndarray, goal: np.ndarray, info: dict):
         return info["is_success"] and not (self.truncated)
 
-    def compute_truncated(self, obs, goal, info):
+    def compute_truncated(self, obs: np.ndarray, goal: np.ndarray, info: dict):
         info["ik_success"] = self.ik_success
         info["contacted"] = self.data.ncon > 10
         position_err, posture_err = self._utils.calc_err_norm(obs, goal)
@@ -90,8 +90,8 @@ class BaseRobotEnv(GoalEnv):
         info["is_far"] = is_far
         return (not info["ik_success"]) or info["contacted"] or info["is_far"]
 
-    def step(self, action):
-        if np.array(action).shape != self.action_space.shape:
+    def step(self, action: np.ndarray):
+        if action.shape != self.action_space.shape:
             raise ValueError("Action dimension mismatch")
 
         action = np.clip(action, self.action_space.low, self.action_space.high)
@@ -135,7 +135,7 @@ class BaseRobotEnv(GoalEnv):
 
     # Extension methods
     # ----------------------------
-    def _mujoco_step(self, action):
+    def _mujoco_step(self, action: np.ndarray):
         """Advance the mujoco simulation.
 
         Override depending on the python binginds, either mujoco or mujoco_py
@@ -159,11 +159,11 @@ class BaseRobotEnv(GoalEnv):
         """Returns the observation."""
         raise NotImplementedError()
 
-    def _set_action(self, action):
+    def _set_action(self, action: np.ndarray):
         """Applies the given action to the simulation."""
         raise NotImplementedError()
 
-    def _is_success(self, obs, goal):
+    def _is_success(self, obs: np.ndarray, goal: np.ndarray):
         """Indicates whether or not the achieved goal successfully achieved the desired goal."""
         raise NotImplementedError()
 
@@ -171,7 +171,7 @@ class BaseRobotEnv(GoalEnv):
         """Samples a new goal and returns it."""
         raise NotImplementedError()
 
-    def _env_setup(self, initial_qpos):
+    def _env_setup(self, initial_qpos: dict[str, float]):
         """Initial configuration of the environment.
 
         Can be used to configure initial state and extract information from the simulation.
@@ -256,6 +256,6 @@ class MujocoRobotEnv(BaseRobotEnv):
         """Return the timestep of each Gymanisum step."""
         return self.model.opt.timestep * self.n_substeps
 
-    def _mujoco_step(self, action):
+    def _mujoco_step(self, action: np.ndarray):
         # self._mujoco.mj_step(self.model, self.data, nstep=self.n_substeps)
         return

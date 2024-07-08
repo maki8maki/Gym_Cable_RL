@@ -34,16 +34,14 @@ class MujocoMZ04CableGraspEnv(MujocoMZ04Env, EzPickle):
             width=848,
             height=480,
             site_name="robot:end_effector",
-            joint_names=np.array(
-                [
-                    "robot:j1_joint",
-                    "robot:j2_joint",
-                    "robot:j3_joint",
-                    "robot:j4_joint",
-                    "robot:j5_joint",
-                    "robot:j6_joint",
-                ]
-            ),
+            joint_names=[
+                "robot:j1_joint",
+                "robot:j2_joint",
+                "robot:j3_joint",
+                "robot:j4_joint",
+                "robot:j5_joint",
+                "robot:j6_joint",
+            ],
             **kwargs,
         )
         EzPickle.__init__(self, **kwargs)
