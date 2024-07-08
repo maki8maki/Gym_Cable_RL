@@ -94,7 +94,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
                 hand_not_ok = is_not_near and self.hand_on
                 truncated = truncated or hand_not_ok
             if truncated:
-                info.update(("is_success", False))
+                info.update([("is_success", False)])
             return truncated
 
         def reset(
