@@ -216,7 +216,7 @@ class SB3Config:
     _env: dataclasses.InitVar[dict]
     _model: dataclasses.InitVar[dict]
     env: gym.Env = dataclasses.field(default=None)
-    nsteps: int = dataclasses.field(default=100, repr=False)
+    nsteps: int = 100
     position_random: bool = False
     posture_random: bool = False
     with_hand: bool = False
