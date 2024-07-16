@@ -126,10 +126,10 @@ class FEExecuter(Executer):
             self.writer.add_scalar("test/loss", test_loss, epoch + 1)
             if check_freq(self.cfg.nepochs, epoch, self.cfg.save_recimg_num):
                 y = self.test(test_x)
-                self.writer.add_image("rgb/" + str(epoch + 1) + "_original", test_x[:3], epoch + 1)
-                self.writer.add_image("depth/" + str(epoch + 1) + "_original", test_x[3:], epoch + 1)
-                self.writer.add_image("rgb/" + str(epoch + 1) + "_reconstructed", y[:3], epoch + 1)
-                self.writer.add_image("depth/" + str(epoch + 1) + "_reconstructed", y[3:], epoch + 1)
+                self.writer.add_image("rgb/original", test_x[:3], epoch + 1)
+                self.writer.add_image("depth/original", test_x[3:], epoch + 1)
+                self.writer.add_image("rgb/reconstructed", y[:3], epoch + 1)
+                self.writer.add_image("depth/reconstructed", y[3:], epoch + 1)
             if self.es(test_loss, self.cfg.fe.model):
                 break
 
@@ -141,7 +141,10 @@ class FEExecuter(Executer):
 
     def __call__(self):
         self.gathering_data()
-        self.train()
+        try:
+            self.train()
+        except KeyboardInterrupt:
+            pass
         self.close()
 
 
