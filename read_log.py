@@ -4,7 +4,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+from tensorboard.backend.event_processing.event_accumulator import (
+    EventAccumulator,
+    ImageEvent,
+    ScalarEvent,
+)
 
 
 def plot(log_dir, tagnames=None, title=None, xlabel=None, ylabel=None, filename=None):
@@ -19,7 +23,7 @@ def plot(log_dir, tagnames=None, title=None, xlabel=None, ylabel=None, filename=
         for tag in tags:
             if tagnames is not None and tag not in tagnames:
                 continue
-            scalars = event.Scalars(tag)
+            scalars: list[ScalarEvent] = event.Scalars(tag)
             step = []
             value = []
             for scalar in scalars:
@@ -55,7 +59,7 @@ def show_image(log_dir, tagnames=None, is_save=False):
         for tag in tags:
             if tagnames is not None and tag not in tagnames:
                 continue
-            imgs = event.Images(tag)
+            imgs: list[ImageEvent] = event.Images(tag)
             img = tf.image.decode_image(imgs[-1].encoded_image_string).numpy()
             fig, _ = plt.subplots(figsize=(img.shape[1] / 10, img.shape[0] / 10))
             plt.imshow(img, vmin=0, vmax=255)
