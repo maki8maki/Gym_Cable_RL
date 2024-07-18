@@ -58,7 +58,7 @@ class TrainFEConfig:
     with_init: bool = True
     data_size: int = 10000
     data_name: str = dataclasses.field(default=None)
-    save_recimg_num: int = 10
+    save_recimg_num: int = dataclasses.field(default=10, repr=False)
     output_dir: str = dataclasses.field(default=None)
 
     def __post_init__(self, _env, log_name, seed):
@@ -220,6 +220,7 @@ class SB3Config:
         else:
             posture_random = "s"
         self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
+        self.basename += f"_{position_random}{posture_random}"
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
     @classmethod
