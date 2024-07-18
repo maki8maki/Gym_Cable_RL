@@ -14,8 +14,6 @@ from stable_baselines3.common.monitor import Monitor
 
 import gym_cable
 from agents import buffer, utils
-from agents.DCAE import DCAE
-from agents.SAC import SAC
 from utils import set_seed
 from wrapper import FEWrapper
 
@@ -31,17 +29,6 @@ class FEConfig:
     model: utils.FE = dataclasses.field(default=None)
     _trans: dataclasses.InitVar[dict] = None
     trans: nn.Module = dataclasses.field(default=None, repr=False)
-
-    def __post_init__(self, _model, _trans):
-        if _model is None:
-            self.model = DCAE(
-                img_height=self.img_height,
-                img_width=self.img_width,
-                img_channel=self.img_channel,
-                hidden_dim=self.hidden_dim,
-            )
-        if _trans is None:
-            self.trans = utils.MyTrans(img_width=self.img_width, img_height=self.img_height)
 
     def convert(self, _cfg: OmegaConf):
         self_copy = deepcopy(self)
@@ -111,24 +98,6 @@ class TrainFEConfig:
         cfg.env = gym.make(**_cfg._env)
 
         return cfg
-
-
-@dataclasses.dataclass
-class RLConfig:
-    obs_dim: int = 6
-    act_dim: int = 6
-    _model: dataclasses.InitVar[dict] = None
-    model: utils.RL = dataclasses.field(default=None)
-
-    def __post_init__(self, _model):
-        if _model is None:
-            self.model = SAC(obs_dim=self.obs_dim, act_dim=self.act_dim)
-
-    def convert(self, _cfg: OmegaConf):
-        self_copy = deepcopy(self)
-        if _cfg._model:
-            self_copy.model = hydra.utils.instantiate(_cfg._model)
-        return self_copy
 
 
 @dataclasses.dataclass
