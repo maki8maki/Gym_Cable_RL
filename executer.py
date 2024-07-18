@@ -161,8 +161,8 @@ class CombExecuter(Executer):
         self.cfg.model.train()
 
     def set_action(self, state: np.ndarray, action: np.ndarray) -> Transition:
-        next_state, reward, terminated, truncated, _ = self.env.step(action)
-        transition = Transition(state, next_state, reward, action, terminated, truncated)
+        next_state, reward, terminated, truncated, info = self.env.step(action)
+        transition = Transition(state, next_state, reward, action, terminated, truncated, info)
         return transition
 
     def train_loop(self, frames: list, titles: list):
