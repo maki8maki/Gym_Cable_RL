@@ -1,4 +1,5 @@
 import dataclasses
+import os
 from copy import deepcopy
 
 import dacite
@@ -9,11 +10,12 @@ import torch.nn as nn
 from absl import logging
 from omegaconf import OmegaConf
 from stable_baselines3.common.base_class import BaseAlgorithm
-from stable_baselines3.common.callbacks import CallbackList, EvalCallback
+from stable_baselines3.common.callbacks import CallbackList
 from stable_baselines3.common.monitor import Monitor
 
 import gym_cable
 from agents import buffer, utils
+from callback import MyEvalVallback, VideoRecordCallback
 from utils import set_seed
 from wrapper import FEWrapper
 
@@ -195,6 +197,7 @@ class SB3Config:
     seed: int = None
     nevalepisodes: int = 5
     eval_num: int = 1000
+    video_num: int = 100
     model: BaseAlgorithm = dataclasses.field(default=None)
     callbacks: CallbackList = dataclasses.field(default=None, repr=False)
     output_dir: str = dataclasses.field(default=None)
@@ -236,15 +239,25 @@ class SB3Config:
         cfg.model = hydra.utils.instantiate(
             _cfg._model, env=cfg.env, tensorboard_log=cfg.output_dir, seed=cfg.seed, device=cfg.device
         )
-        eval_callback = EvalCallback(
+        eval_callback = MyEvalVallback(
             eval_env=Monitor(cfg.env),
             n_eval_episodes=cfg.nevalepisodes,
-            best_model_save_path=cfg.output_dir,
+            best_model_save_filenames=[
+                os.path.join(cfg.output_dir, cfg.basename),
+                os.path.join("./model", cfg.basename),
+            ],
             log_path=cfg.output_dir,
             eval_freq=int(cfg.total_steps / cfg.eval_num),
             verbose=0,
             deterministic=True,
             render=False,
         )
-        cfg.callbacks = CallbackList([eval_callback])
+        video_callback = VideoRecordCallback(
+            env=cfg.env,
+            save_freq=int(cfg.total_steps / cfg.video_num),
+            save_filename=os.path.join(cfg.output_dir, f"{cfg.basename}.mp4"),
+            deterministic=True,
+            verbose=0,
+        )
+        cfg.callbacks = CallbackList([eval_callback, video_callback])
         return cfg
