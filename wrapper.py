@@ -40,7 +40,7 @@ class FEWrapper(gym.ObservationWrapper, gym.utils.RecordConstructorArgs):
             for name in image_list[1:]:
                 image = np.concatenate([image, normalized_obs[name] * 0.5 + 0.5], axis=2)
             image = th.tensor(self.trans(image), dtype=th.float, device=self.device)
-            hs = self.model.forward(image).cpu().squeeze().detach().numpy()
+            hs = self.model.forward(image.unsqueeze(0)).cpu().squeeze().detach().numpy()
             state = np.concatenate([hs, normalized_obs["observation"]])
             return state
         else:
