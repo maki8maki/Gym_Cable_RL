@@ -18,7 +18,12 @@ class FEWrapper(gym.ObservationWrapper, gym.utils.RecordConstructorArgs):
         self.device = model.device
 
         self.old_observation_space = deepcopy(self.env.observation_space)
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(26,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(
+            low=-1,
+            high=1,
+            shape=(self.model.hidden_dim + self.old_observation_space["observation"].shape[0],),
+            dtype=np.float32,
+        )
 
         self.model.eval()
 
