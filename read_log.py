@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from tensorboard.backend.event_processing.event_accumulator import (
+    DEFAULT_SIZE_GUIDANCE,
+    IMAGES,
     EventAccumulator,
     ImageEvent,
     ScalarEvent,
@@ -47,11 +49,14 @@ def plot(log_dir, tagnames=None, title=None, xlabel=None, ylabel=None, filename=
                 plt.show()
 
 
-def show_image(log_dir, tagnames=None, is_save=False):
+def show_image(log_dir, tagnames=None, is_save=False, log_length=0):
     log_files = [path for path in Path(log_dir).glob("**/*") if path.is_file()]
 
+    size_guidance = DEFAULT_SIZE_GUIDANCE
+    size_guidance.update([(IMAGES, log_length)])
+
     for log_file in log_files:
-        event = EventAccumulator(str(log_file))
+        event = EventAccumulator(str(log_file), size_guidance=size_guidance)
         event.Reload()
 
         tags = event.Tags()["images"]
