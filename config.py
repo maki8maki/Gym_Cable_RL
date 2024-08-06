@@ -255,7 +255,7 @@ class SB3Config:
         video_callback = VideoRecordCallback(
             env=cfg.env,
             save_freq=int(cfg.total_steps / cfg.video_num),
-            save_filename=os.path.join(cfg.output_dir, f"{cfg.basename}.mp4"),
+            save_filename=os.path.join(cfg.output_dir, f"{cfg.basename}_learning.mp4"),
             deterministic=True,
             verbose=0,
         )
