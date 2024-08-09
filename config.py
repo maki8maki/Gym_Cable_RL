@@ -166,6 +166,7 @@ class CombConfig:
         cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
         cfg.fe.model.to(cfg.device)
         cfg.fe.model.load_state_dict(th.load(f"./model/{cfg.fe.model_name}", map_location=cfg.device))
+        th.save(cfg.fe.model.state_dict(), os.path.join(cfg.output_dir, cfg.fe.model_name))
 
         gym_cable.register_robotics_envs()
         env = gym.make(**_cfg._env)
@@ -232,6 +233,7 @@ class SB3Config:
         cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
         cfg.fe.model.to(device=cfg.device)
         cfg.fe.model.load_state_dict(th.load(f"./model/{cfg.fe.model_name}", map_location=cfg.device))
+        th.save(cfg.fe.model.state_dict(), os.path.join(cfg.output_dir, cfg.fe.model_name))
 
         gym_cable.register_robotics_envs()
         env = gym.make(**_cfg._env)
