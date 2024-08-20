@@ -31,9 +31,7 @@ def playback(log_dir, length=0):
 
         tes: list[TensorEvent] = event.Tensors("action")
 
-        env = gym.make(
-            "MZ04CableGrasp-v0", render_mode="rgb_array", position_random=False, posture_random=False, with_hand=False
-        )
+        env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", position_random=False, posture_random=False)
         env.reset()
 
         imgs = [env.render()]

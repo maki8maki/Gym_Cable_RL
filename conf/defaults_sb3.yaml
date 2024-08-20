@@ -14,7 +14,6 @@ _env:
   max_episode_steps: ${nsteps}
   position_random: ${position_random}
   posture_random: ${posture_random}
-  with_hand: ${with_hand}
 
 _model:
   _target_: stable_baselines3.SAC
@@ -24,7 +23,6 @@ _model:
 nsteps: 100
 position_random: False
 posture_random: False
-with_hand: False
 fe_with_init: True
 device: cuda
 total_steps: 500000

@@ -12,7 +12,6 @@ _env:
   max_episode_steps: ${nsteps}
   position_random: ${position_random}
   posture_random: ${posture_random}
-  with_hand: with_hand: ${with_hand}
 
 _model:
   _target_: agents.SAC.SAC
@@ -23,7 +22,6 @@ memory_size: 10000
 nsteps: 100
 position_random: False
 posture_random: False
-with_hand: False
 start_steps: 10000
 total_steps: 500000
 nevalepisodes: 5

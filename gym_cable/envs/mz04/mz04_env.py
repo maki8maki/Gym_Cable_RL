@@ -32,7 +32,6 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             distance_threshold: float,
             rotation_threshold: float,
             rot_weight: float,
-            with_hand: bool,
             **kwargs,
         ):
             """Initializes a new MZ04 environment.
@@ -55,13 +54,8 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             self.distance_threshold = distance_threshold
             self.rotation_threshold = rotation_threshold
             self.rot_weight = rot_weight
-            self.with_hand = with_hand
 
-            if self.with_hand:
-                self.hand_on = False
-                n_actions = 7
-            else:
-                n_actions = 6
+            n_actions = 6
 
             super().__init__(n_actions=n_actions, **kwargs)
 
@@ -81,18 +75,10 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
 
         def compute_terminated(self, obs: np.ndarray, goal: np.ndarray, info: dict):
             terminated = super().compute_terminated(obs, goal, info)
-            if self.with_hand:
-                is_near = info["is_success"]
-                hand_ok = is_near and self.hand_on
-                terminated = terminated and hand_ok
             return terminated
 
         def compute_truncated(self, obs: np.ndarray, goal: np.ndarray, info: dict):
             truncated = super().compute_truncated(obs, goal, info)
-            if self.with_hand:
-                is_not_near = not info["is_success"]
-                hand_not_ok = is_not_near and self.hand_on
-                truncated = truncated or hand_not_ok
             if truncated:
                 info.update([("is_success", False)])
             return truncated
@@ -108,9 +94,6 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             obs = self._get_obs()
             if self.render_mode == "human":
                 self.render()
-
-            if self.with_hand:
-                self.hand_on = False
 
             return obs, info
 
@@ -177,9 +160,6 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         self._mujoco.mj_forward(self.model, self.data)
 
     def _set_action(self, action: np.ndarray):
-        if self.with_hand:
-            self.hand_on = action[-1] >= 0
-            action = action[:6]
         action = super()._set_action(action)
 
         # Apply action to simulation.

@@ -12,7 +12,6 @@ _env:
   max_episode_steps: ${nsteps}
   position_random: ${position_random}
   posture_random: ${posture_random}
-  with_hand: False
 
 basename: DCAE
 log_name: grasp_rgbd
