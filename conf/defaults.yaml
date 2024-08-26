@@ -12,6 +12,7 @@ _env:
   max_episode_steps: ${nsteps}
   position_random: ${position_random}
   posture_random: ${posture_random}
+  with_continuous: False
 
 _model:
   _target_: agents.SAC.SAC

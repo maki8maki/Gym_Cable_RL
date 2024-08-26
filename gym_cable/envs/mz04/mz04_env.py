@@ -29,6 +29,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             obj_posture_range: float,
             position_random: bool,
             posture_random: bool,
+            with_continuous: bool,
             distance_threshold: float,
             rotation_threshold: float,
             rot_weight: float,
@@ -51,6 +52,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             self.obj_posture_range = obj_posture_range
             self.position_random = position_random
             self.posture_random = posture_random
+            self.with_continuous = with_continuous
             self.distance_threshold = distance_threshold
             self.rotation_threshold = rotation_threshold
             self.rot_weight = rot_weight
@@ -63,7 +65,7 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
         # ----------------------------
 
         def compute_reward(self, obs: np.ndarray, goal: np.ndarray, info: dict):
-            if self.terminated:
+            if self.terminated and not self.with_continuous:
                 reward = 10
             elif self.truncated:
                 reward = -1
@@ -74,7 +76,10 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             return reward
 
         def compute_terminated(self, obs: np.ndarray, goal: np.ndarray, info: dict):
-            terminated = super().compute_terminated(obs, goal, info)
+            if self.with_continuous:
+                terminated = False
+            else:
+                terminated = super().compute_terminated(obs, goal, info)
             return terminated
 
         def compute_truncated(self, obs: np.ndarray, goal: np.ndarray, info: dict):

@@ -13,7 +13,7 @@ def main(_cfg: OmegaConf):
     cfg = SB3Config.convert(_cfg)
     set_seed(0)
 
-    model = cfg.model.load("logs/SB3_SAC_trainedVAE/20240624-1621/best_model.zip")
+    model = cfg.model.load(os.path.join("logs", "SB3_SAC_trainedVAE", "20240805-2119", f"{cfg.basename}.zip"))
     policy = model.policy
     policy.set_training_mode(False)
 
@@ -24,12 +24,15 @@ def main(_cfg: OmegaConf):
     success_num = 0
     for _ in range(10):
         obs, _ = env.reset()
+        success_num = 0
         for step in range(cfg.nsteps):
             obs = th.tensor(obs)
             action, _ = policy.predict(obs, deterministic=True)
-            next_obs, _, terminated, truncated, _ = env.step(action)
+            next_obs, _, terminated, truncated, info = env.step(action)
             frames.append(env.render())
             titles.append(f"Step {step+1}")
+            if info["is_success"]:
+                success_num += 1
             if terminated or truncated:
                 if terminated:
                     success_num += 1
