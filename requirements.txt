@@ -1,4 +1,4 @@
-mujoco==2.3.7
+mujoco==3.2.2
 gymnasium==0.29.1
 matplotlib
 numpy
