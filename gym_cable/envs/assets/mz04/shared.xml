@@ -27,7 +27,7 @@
         <texture type="2d" name="floor_mat" file="floor.png"/>
         <material name="floor_mat" texture="floor_mat" specular="1.0" shininess="0.5"/>
 
-        <!-- robot -->
+        <!-- robot and frame -->
         <material name="Opaque(60,60,60)" specular="0.5" shininess="0.5" rgba="0.235294 0.235294 0.235294 1.0"/>
         <material name="Opaque(34,34,34)" specular="0.5" shininess="0.5" rgba="0.133333 0.133333 0.133333 1.0"/>
         <material name="Opaque(191,191,191)" specular="0.5" shininess="0.5" rgba="0.749020 0.749020 0.749020 1.0"/>
@@ -40,6 +40,9 @@
         <material name="Opaque(255,239,173)" specular="0.5" shininess="0.5" rgba="1.000000 0.937255 0.678431 1.0"/>
         <material name="Opaque(63,63,63)" specular="0.5" shininess="0.5" rgba="0.250980 0.250980 0.250980 1.0"/>
         <material name="Opaque(176,176,176)" specular="0.5" shininess="0.5" rgba="0.690196 0.690196 0.690196 1.0"/>
+        <material name="Opaque(0,128,128)" specular="0.5" shininess="0.5" rgba="0.000000 0.501961 0.501961 1.0"/>
+        <material name="frame_joining" specular="0.5" shininess="0.5" rgba="0.627451 0.627451 0.627451 1.0"/>
+        <material name="frame_base" specular="0.5" shininess="0.5" rgba="0.172549 0.172549 0.172549 1.0"/>
 
         <mesh file="MZ04-01_BASE.stl" name="robot:base_link"></mesh>
         <mesh file="MZ04-01_J1.stl" name="robot:j1_link"></mesh>
@@ -70,6 +73,12 @@
         <mesh file="EndEffector_2.obj"/>
         <mesh file="EndEffector_3.obj"/>
         <mesh file="EndEffector_4.obj"/>
+
+        <mesh file="frame_caster_wheel.obj"/>
+        <mesh file="frame_caster_pad.obj"/>
+        <mesh file="frame_caster_plate.obj"/>
+        <mesh file="frame_joining.obj"/>
+        <mesh file="frame_base.obj"/>
 
         <!-- pallet -->
         <texture type="2d" name="wood" file="Wood073_2K-JPG_Color.png"/>

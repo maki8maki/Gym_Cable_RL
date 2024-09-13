@@ -7,17 +7,17 @@ from gymnasium.utils.ezpickle import EzPickle
 from gym_cable.envs.mz04.mz04_env import MujocoMZ04Env
 
 # Ensure we get the path separator correct on windows
-MODEL_XML_PATH = os.path.join("mz04", "grasp.xml")
+MODEL_XML_PATH = os.path.join("mz04", "mjmodel.xml")
 
 
 class MujocoMZ04CableGraspEnv(MujocoMZ04Env, EzPickle):
     def __init__(self, **kwargs):
         initial_qpos = {
             "robot:j1_joint": 0.0,
-            "robot:j2_joint": 1.67,
-            "robot:j3_joint": -0.157,
+            "robot:j2_joint": 1.53,
+            "robot:j3_joint": -0.401,
             "robot:j4_joint": 0.0,
-            "robot:j5_joint": -1.57,
+            "robot:j5_joint": -1.17,
             "robot:j6_joint": 0.0,
         }
         MujocoMZ04Env.__init__(
