@@ -226,7 +226,7 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
             self.model.body("B_first").pos[1] += diff
         if self.posture_random:
             diff = self.np_random.uniform(0, self.obj_posture_range)
-            self.model.body("B_10").quat = rotations.euler2quat(np.deg2rad(np.array([180, 90 - diff, 0])))
+            self.model.body("B_11").quat = rotations.euler2quat(np.deg2rad(np.array([180, 90 - diff, 0])))
 
         self._mujoco.mj_forward(self.model, self.data)
         return True

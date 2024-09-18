@@ -1,0 +1,379 @@
+<mujoco model="MuJoCo Model">
+  <compiler angle="radian" meshdir="./stl/" texturedir="./texture/"/>
+
+  <option gravity="0 0 0"/>
+
+  <size nuser_geom="1"/>
+
+  <default>
+    <default class="visual">
+      <geom type="mesh" contype="0" conaffinity="0" group="2"/>
+    </default>
+    <default class="collision">
+      <geom type="mesh" group="3"/>
+    </default>
+    <default class="mz04">
+      <joint limited="true" range="-180 180" armature="1" damping="50"/>
+      <geom type="mesh" solref="0.01" solimp="0.99 0.99 0.01" margin="0.001" rgba="1 1 1 0"/>
+      <default class="mz04:end_effector">
+        <geom rgba="0 0 0 1"/>
+      </default>
+    </default>
+    <default class="circuit">
+      <default class="board">
+        <geom type="box" rgba="0 1 0 1"/>
+      </default>
+      <default class="connector">
+        <geom type="box" rgba="0 0 0 1"/>
+      </default>
+    </default>
+  </default>
+
+  <extension>
+    <plugin plugin="mujoco.elasticity.cable">
+      <instance name="composite">
+        <config key="twist" value="1e8"/>
+        <config key="bend" value="1e7"/>
+        <config key="vmax" value="0.2"/>
+      </instance>
+    </plugin>
+  </extension>
+
+  <custom>
+    <text name="composite_" data="rope_"/>
+  </custom>
+
+  <asset>
+    <texture type="2d" name="floor_mat" file="floor.png"/>
+    <texture type="2d" name="wood" file="Wood073_2K-JPG_Color.png"/>
+    <material name="floor_mat" texture="floor_mat" specular="1"/>
+    <material name="Opaque(60,60,60)" rgba="0.235294 0.235294 0.235294 1"/>
+    <material name="Opaque(34,34,34)" rgba="0.133333 0.133333 0.133333 1"/>
+    <material name="Opaque(191,191,191)" rgba="0.74902 0.74902 0.74902 1"/>
+    <material name="Opaque(114,127,127)" rgba="0.447059 0.498039 0.498039 1"/>
+    <material name="Opaque(216,216,216)" rgba="0.847059 0.847059 0.847059 1"/>
+    <material name="Opaque(255,200,0)" rgba="1 0.784314 0 1"/>
+    <material name="Opaque(255,0,0)" rgba="1 0 0 1"/>
+    <material name="plastic_black" rgba="0.098039 0.098039 0.098039 1"/>
+    <material name="Opaque(203,210,238)" rgba="0.796078 0.823529 0.933333 1"/>
+    <material name="Opaque(255,239,173)" rgba="1 0.937255 0.678431 1"/>
+    <material name="Opaque(63,63,63)" rgba="0.25098 0.25098 0.25098 1"/>
+    <material name="Opaque(176,176,176)" rgba="0.690196 0.690196 0.690196 1"/>
+    <material name="Opaque(0,128,128)" rgba="0 0.501961 0.501961 1"/>
+    <material name="frame_joining" rgba="0.627451 0.627451 0.627451 1"/>
+    <material name="frame_base" rgba="0.172549 0.172549 0.172549 1"/>
+    <material name="wood" texture="wood" specular="1"/>
+    <material name="legs" rgba="0.960784 0.960784 0.964706 1"/>
+    <material name="panel" rgba="0.172549 0.172549 0.172549 1"/>
+    <material name="fixing" rgba="0.768627 0.207843 0.152941 1"/>
+    <mesh name="robot:base_link" file="MZ04-01_BASE.stl"/>
+    <mesh name="robot:j1_link" file="MZ04-01_J1.stl"/>
+    <mesh name="robot:j2_link" file="MZ04-01_J2.stl"/>
+    <mesh name="robot:j3_link" file="MZ04-01_J3.stl"/>
+    <mesh name="robot:j4_link" file="MZ04-01_J4.stl"/>
+    <mesh name="robot:j5_link" file="MZ04-01_J5.stl"/>
+    <mesh name="robot:j6_link" file="MZ04-01_J6.stl"/>
+    <mesh name="robot:end_effector" file="EndEffector.stl"/>
+    <mesh name="MZ04-Base_0" file="MZ04-Base_0.obj"/>
+    <mesh name="MZ04-Base_1" file="MZ04-Base_1.obj"/>
+    <mesh name="MZ04-Base_2" file="MZ04-Base_2.obj"/>
+    <mesh name="MZ04-J1_0" file="MZ04-J1_0.obj"/>
+    <mesh name="MZ04-J1_1" file="MZ04-J1_1.obj"/>
+    <mesh name="MZ04-J2_0" file="MZ04-J2_0.obj"/>
+    <mesh name="MZ04-J2_1" file="MZ04-J2_1.obj"/>
+    <mesh name="MZ04-J3_0" file="MZ04-J3_0.obj"/>
+    <mesh name="MZ04-J3_1" file="MZ04-J3_1.obj"/>
+    <mesh name="MZ04-J4_0" file="MZ04-J4_0.obj"/>
+    <mesh name="MZ04-J4_1" file="MZ04-J4_1.obj"/>
+    <mesh name="MZ04-J5_0" file="MZ04-J5_0.obj"/>
+    <mesh name="MZ04-J5_1" file="MZ04-J5_1.obj"/>
+    <mesh name="MZ04-J6_0" file="MZ04-J6_0.obj"/>
+    <mesh name="MZ04-J6_1" file="MZ04-J6_1.obj"/>
+    <mesh name="EndEffector_0" file="EndEffector_0.obj"/>
+    <mesh name="EndEffector_1" file="EndEffector_1.obj"/>
+    <mesh name="EndEffector_2" file="EndEffector_2.obj"/>
+    <mesh name="EndEffector_3" file="EndEffector_3.obj"/>
+    <mesh name="EndEffector_4" file="EndEffector_4.obj"/>
+    <mesh name="frame_caster_wheel" file="frame_caster_wheel.obj"/>
+    <mesh name="frame_caster_pad" file="frame_caster_pad.obj"/>
+    <mesh name="frame_caster_plate" file="frame_caster_plate.obj"/>
+    <mesh name="frame_joining" file="frame_joining.obj"/>
+    <mesh name="frame_base" file="frame_base.obj"/>
+    <mesh name="pallet" file="pallet.obj"/>
+    <mesh name="stand_panel" file="stand_panel.obj"/>
+    <mesh name="stand_legs" file="stand_legs.obj"/>
+    <mesh name="fixing" file="fixing.obj"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor0" size="15 15 1" pos="0 0 -0.717" type="plane" material="floor_mat"/>
+    <light name="light0" pos="0 0 4" dir="0 0 -1" directional="true" castshadow="false" ambient="0.2 0.2 0.2" diffuse="0.8 0.8 0.8"/>
+    <body name="B_first" pos="0.375 0 0.316" quat="0 0 0 1">
+      <geom name="G0" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+      <site name="S_first" pos="0 0 0" group="3"/>
+      <plugin instance="composite"/>
+      <body name="B_1" pos="0.005 0 0">
+        <joint name="J_1" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+        <geom name="G1" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+        <plugin instance="composite"/>
+        <body name="B_2" pos="0.005 0 0">
+          <joint name="J_2" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+          <geom name="G2" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+          <plugin instance="composite"/>
+          <body name="B_3" pos="0.005 0 0">
+            <joint name="J_3" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+            <geom name="G3" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+            <plugin instance="composite"/>
+            <body name="B_4" pos="0.005 0 0">
+              <joint name="J_4" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+              <geom name="G4" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+              <plugin instance="composite"/>
+              <body name="B_5" pos="0.005 0 0">
+                <joint name="J_5" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                <geom name="G5" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                <plugin instance="composite"/>
+                <body name="B_6" pos="0.005 0 0">
+                  <joint name="J_6" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                  <geom name="G6" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                  <plugin instance="composite"/>
+                  <body name="B_7" pos="0.005 0 0">
+                    <joint name="J_7" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                    <geom name="G7" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                    <plugin instance="composite"/>
+                    <body name="B_8" pos="0.005 0 0">
+                      <joint name="J_8" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                      <geom name="G8" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                      <plugin instance="composite"/>
+                      <body name="B_9" pos="0.005 0 0" quat="0.707107 0 -0.707107 0">
+                        <joint name="J_9" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                        <geom name="G9" size="0.00075 0.015 0.0003" pos="0.00075 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                        <plugin instance="composite"/>
+                        <body name="B_10" pos="0.0015 0 0">
+                          <joint name="J_10" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                          <geom name="G10" size="0.00075 0.015 0.0003" pos="0.00075 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                          <plugin instance="composite"/>
+                          <body name="B_11" pos="0.0015 0 0" quat="0 -0.707107 0 -0.707107">
+                            <joint name="J_11" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                            <geom name="G11" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                            <plugin instance="composite"/>
+                            <body name="B_12" pos="0.005 0 0">
+                              <joint name="J_12" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                              <geom name="G12" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                              <plugin instance="composite"/>
+                              <body name="B_13" pos="0.005 0 0">
+                                <joint name="J_13" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                                <geom name="G13" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                                <plugin instance="composite"/>
+                                <body name="B_14" pos="0.005 0 0">
+                                  <joint name="J_14" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                                  <geom name="G14" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                                  <plugin instance="composite"/>
+                                  <body name="B_15" pos="0.005 0 0">
+                                    <joint name="J_15" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                                    <geom name="G15" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                                    <plugin instance="composite"/>
+                                    <body name="B_16" pos="0.005 0 0">
+                                      <joint name="J_16" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                                      <geom name="G16" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                                      <plugin instance="composite"/>
+                                      <body name="B_17" pos="0.005 0 0">
+                                        <joint name="J_17" pos="0 0 0" type="ball" group="3" actuatorfrclimited="false" damping="0.1"/>
+                                        <geom name="G17" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="3" rgba="0 0 1 1"/>
+                                        <plugin instance="composite"/>
+                                        <body name="B_last" pos="0.005 0 0">
+                                          <joint name="J_last" pos="0 0 0" type="ball" group="3" damping="0.1"/>
+                                          <geom name="G18" size="0.0025 0.015 0.0003" pos="0.0025 0 0" type="box" group="2" rgba="0 0 1 1"/>
+                                          <site name="S_last" pos="0.005 0 0" group="3"/>
+                                          <plugin instance="composite"/>
+                                        </body>
+                                      </body>
+                                    </body>
+                                  </body>
+                                </body>
+                              </body>
+                            </body>
+                          </body>
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+    <body name="stand" pos="0.62 0 0.306">
+      <geom class="visual" material="panel" mesh="stand_panel"/>
+      <geom class="visual" material="legs" mesh="stand_legs"/>
+      <geom class="collision" mesh="stand_panel"/>
+      <geom class="collision" mesh="stand_legs"/>
+    </body>
+    <body name="fixing" pos="0.375 0.04 0.306" quat="0.707107 0 0 -0.707107">
+      <geom class="collision" mesh="fixing"/>
+      <geom class="visual" material="fixing" mesh="fixing"/>
+      <body name="circuit" childclass="circuit" pos="0.04 0 0.01" quat="0.707107 0 0 0.707107">
+        <body name="board" pos="0.013 0 0.00075">
+          <geom name="board" class="board" size="0.013 0.02 0.00075"/>
+          <body name="connector" pos="-0.013 0 0.00075">
+            <geom name="connector_l" class="connector" size="0.0025 0.0007 0.0006" pos="0.0025 0.016 0.0006"/>
+            <geom name="connector_r" class="connector" size="0.0025 0.0007 0.0006" pos="0.0025 -0.016 0.0006"/>
+            <geom name="connector_u" class="connector" size="0.0025 0.0167 0.0004" pos="0.0025 0 0.0016"/>
+            <geom name="connector_b" class="connector" size="0.00125 0.0167 0.0006" pos="0.00375 0 0.0006"/>
+          </body>
+        </body>
+      </body>
+    </body>
+    <body name="frame">
+      <geom class="visual" material="Opaque(63,63,63)" mesh="frame_caster_wheel"/>
+      <geom class="visual" material="Opaque(0,128,128)" mesh="frame_caster_pad"/>
+      <geom class="visual" material="Opaque(176,176,176)" mesh="frame_caster_plate"/>
+      <geom class="visual" material="frame_joining" mesh="frame_joining"/>
+      <geom class="visual" material="frame_base" mesh="frame_base"/>
+      <geom class="collision" mesh="frame_caster_wheel"/>
+      <geom class="collision" mesh="frame_caster_pad"/>
+      <geom class="collision" mesh="frame_caster_plate"/>
+      <geom class="collision" mesh="frame_joining"/>
+      <geom class="collision" mesh="frame_base"/>
+    </body>
+    <body name="robot:base" childclass="mz04">
+      <inertial pos="0 0 0" mass="0.1" diaginertia="0.03 0.03 0.03"/>
+      <geom class="visual" material="Opaque(191,191,191)" mesh="MZ04-Base_0"/>
+      <geom class="visual" material="Opaque(34,34,34)" mesh="MZ04-Base_1"/>
+      <geom class="visual" material="Opaque(60,60,60)" mesh="MZ04-Base_2"/>
+      <geom name="robot:base" mesh="robot:base_link"/>
+      <body name="robot:j1_link">
+        <inertial pos="0 0 0.17" mass="0.1" diaginertia="0.03 0.03 0.03"/>
+        <joint name="robot:j1_joint" pos="0 0 0.17" axis="0 0 1" range="-3.14159 3.14159"/>
+        <geom class="visual" material="Opaque(216,216,216)" mesh="MZ04-J1_0"/>
+        <geom class="visual" material="Opaque(114,127,127)" mesh="MZ04-J1_1"/>
+        <geom name="robot:j1_link" mesh="robot:j1_link"/>
+        <body name="robot:j2_link">
+          <inertial pos="0 0 0.34" mass="0.1" diaginertia="0.03 0.03 0.03"/>
+          <joint name="robot:j2_joint" pos="0 0 0.34" axis="0 -1 0" ref="1.5708" range="-3.14159 3.14159"/>
+          <geom class="visual" material="Opaque(216,216,216)" mesh="MZ04-J2_0"/>
+          <geom class="visual" material="Opaque(114,127,127)" mesh="MZ04-J2_1"/>
+          <geom name="robot:j2_link" mesh="robot:j2_link"/>
+          <body name="robot:j3_link">
+            <inertial pos="0 0 0.6" mass="0.1" diaginertia="0.03 0.03 0.03"/>
+            <joint name="robot:j3_joint" pos="0 0 0.6" axis="0 -1 0" range="-3.14159 3.14159"/>
+            <geom class="visual" material="Opaque(255,200,0)" mesh="MZ04-J3_0"/>
+            <geom class="visual" material="Opaque(216,216,216)" mesh="MZ04-J3_1"/>
+            <geom name="robot:j3_link" mesh="robot:j3_link"/>
+            <body name="robot:j4_link">
+              <inertial pos="0.08 0 0.625" mass="0.1" diaginertia="0.03 0.03 0.03"/>
+              <joint name="robot:j4_joint" pos="0.08 0 0.625" axis="1 0 0" range="-3.14159 3.14159"/>
+              <geom class="visual" material="Opaque(255,0,0)" mesh="MZ04-J4_0"/>
+              <geom class="visual" material="Opaque(216,216,216)" mesh="MZ04-J4_1"/>
+              <geom name="robot:j4_link" mesh="robot:j4_link"/>
+              <body name="robot:j5_link">
+                <inertial pos="0.28 0 0.625" mass="0.1" diaginertia="0.03 0.03 0.03"/>
+                <joint name="robot:j5_joint" pos="0.28 0 0.625" axis="0 -1 0" range="-3.14159 3.14159"/>
+                <geom class="visual" material="Opaque(216,216,216)" mesh="MZ04-J5_0"/>
+                <geom class="visual" material="Opaque(60,60,60)" mesh="MZ04-J5_1"/>
+                <geom name="robot:j5_link" mesh="robot:j5_link"/>
+                <body name="robot:j6_link">
+                  <inertial pos="0.35 0 0.625" mass="0.1" diaginertia="0.03 0.03 0.03"/>
+                  <joint name="robot:j6_joint" pos="0.35 0 0.625" axis="1 0 0" range="-3.14159 3.14159"/>
+                  <geom class="visual" material="Opaque(255,0,0)" mesh="MZ04-J6_0"/>
+                  <geom class="visual" material="Opaque(60,60,60)" mesh="MZ04-J6_1"/>
+                  <geom name="robot:j6_link" mesh="robot:j6_link"/>
+                  <body name="robot:end_effector_link" pos="0.362 0 0.625" quat="0.707107 0 -0.707107 0">
+                    <site name="robot:end_effector" pos="0.085 0 -0.039" size="0.002" rgba="1 0 1 0"/>
+                    <camera name="robot:camera" pos="0.101 0.009 0.095" quat="0.707107 0 0 -0.707107" fovy="58"/>
+                    <camera name="robot:camera_right" pos="0.101 -0.009 0.095" quat="0.707107 0 0 -0.707107" fovy="58"/>
+                    <body name="robot:end_effector" pos="-0.03 -0.03 0">
+                      <geom mesh="robot:end_effector"/>
+                      <geom class="visual" material="Opaque(176,176,176)" mesh="EndEffector_0"/>
+                      <geom class="visual" material="Opaque(63,63,63)" mesh="EndEffector_1"/>
+                      <geom class="visual" material="Opaque(255,239,173)" mesh="EndEffector_2"/>
+                      <geom class="visual" material="Opaque(203,210,238)" mesh="EndEffector_3"/>
+                      <geom class="visual" material="plastic_black" mesh="EndEffector_4"/>
+                    </body>
+                    <body name="robot:ee_adhesion" pos="0.085 0 -0.039">
+                      <geom class="mz04:end_effector" size="0.002 0.002 0.002" pos="0 0 0.002" type="box"/>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <contact>
+    <exclude body1="B_first" body2="B_1"/>
+    <exclude body1="B_1" body2="B_2"/>
+    <exclude body1="B_2" body2="B_3"/>
+    <exclude body1="B_3" body2="B_4"/>
+    <exclude body1="B_4" body2="B_5"/>
+    <exclude body1="B_5" body2="B_6"/>
+    <exclude body1="B_6" body2="B_7"/>
+    <exclude body1="B_7" body2="B_8"/>
+    <exclude body1="B_8" body2="B_9"/>
+    <exclude body1="B_9" body2="B_10"/>
+    <exclude body1="B_10" body2="B_11"/>
+    <exclude body1="B_11" body2="B_12"/>
+    <exclude body1="B_12" body2="B_13"/>
+    <exclude body1="B_13" body2="B_14"/>
+    <exclude body1="B_14" body2="B_15"/>
+    <exclude body1="B_15" body2="B_16"/>
+    <exclude body1="B_16" body2="B_17"/>
+    <exclude body1="robot:base" body2="robot:j1_link"/>
+    <exclude body1="robot:j1_link" body2="robot:j2_link"/>
+    <exclude body1="robot:j2_link" body2="robot:j3_link"/>
+    <exclude body1="robot:j3_link" body2="robot:j4_link"/>
+    <exclude body1="robot:j4_link" body2="robot:j5_link"/>
+    <exclude body1="robot:j5_link" body2="robot:j6_link"/>
+  </contact>
+
+  <deformable>
+    <skin name="Skin" rgba="1 1 1 1" inflate="0.0006" vertex="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" face="0 2 3 0 3 1 2 4 5 2 5 3 4 6 7 4 7 5 6 8 9 6 9 7 8 10 11 8 11 9 10 12 13 10 13 11 12 14 15 12 15 13 14 16 17 14 17 15 16 18 19 16 19 17 18 20 21 18 21 19 20 22 23 20 23 21 22 24 25 22 25 23 24 26 27 24 27 25 26 28 29 26 29 27 28 30 31 28 31 29 30 32 33 30 33 31 32 34 35 32 35 33 34 36 37 34 37 35 38 41 40 38 39 41 40 43 42 40 41 43 42 45 44 42 43 45 44 47 46 44 45 47 46 49 48 46 47 49 48 51 50 48 49 51 50 53 52 50 51 53 52 55 54 52 53 55 54 57 56 54 55 57 56 59 58 56 57 59 58 61 60 58 59 61 60 63 62 60 61 63 62 65 64 62 63 65 64 67 66 64 65 67 66 69 68 66 67 69 68 71 70 68 69 71 70 73 72 70 71 73 72 75 74 72 73 75 0 40 2 0 38 40 2 42 4 2 40 42 4 44 6 4 42 44 6 46 8 6 44 46 8 48 10 8 46 48 10 50 12 10 48 50 12 52 14 12 50 52 14 54 16 14 52 54 16 56 18 16 54 56 18 58 20 18 56 58 20 60 22 20 58 60 22 62 24 22 60 62 24 64 26 24 62 64 26 66 28 26 64 66 28 68 30 28 66 68 30 70 32 30 68 70 32 72 34 32 70 72 34 74 36 34 72 74 1 3 41 1 41 39 3 5 43 3 43 41 5 7 45 5 45 43 7 9 47 7 47 45 9 11 49 9 49 47 11 13 51 11 51 49 13 15 53 13 53 51 15 17 55 15 55 53 17 19 57 17 57 55 19 21 59 19 59 57 21 23 61 21 61 59 23 25 63 23 63 61 25 27 65 25 65 63 27 29 67 27 67 65 29 31 69 29 69 67 31 33 71 31 71 69 33 35 73 33 73 71 35 37 75 35 75 73 0 1 39 0 39 38 36 75 37 36 74 75">
+      <bone body="B_first" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="0 38" vertweight="1 1"/>
+      <bone body="B_first" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="1 39" vertweight="1 1"/>
+      <bone body="B_1" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="2 40" vertweight="1 1"/>
+      <bone body="B_1" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="3 41" vertweight="1 1"/>
+      <bone body="B_2" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="4 42" vertweight="1 1"/>
+      <bone body="B_2" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="5 43" vertweight="1 1"/>
+      <bone body="B_3" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="6 44" vertweight="1 1"/>
+      <bone body="B_3" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="7 45" vertweight="1 1"/>
+      <bone body="B_4" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="8 46" vertweight="1 1"/>
+      <bone body="B_4" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="9 47" vertweight="1 1"/>
+      <bone body="B_5" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="10 48" vertweight="1 1"/>
+      <bone body="B_5" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="11 49" vertweight="1 1"/>
+      <bone body="B_6" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="12 50" vertweight="1 1"/>
+      <bone body="B_6" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="13 51" vertweight="1 1"/>
+      <bone body="B_7" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="14 52" vertweight="1 1"/>
+      <bone body="B_7" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="15 53" vertweight="1 1"/>
+      <bone body="B_8" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="16 54" vertweight="1 1"/>
+      <bone body="B_8" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="17 55" vertweight="1 1"/>
+      <bone body="B_9" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="18 56" vertweight="1 1"/>
+      <bone body="B_9" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="19 57" vertweight="1 1"/>
+      <bone body="B_10" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="20 58" vertweight="1 1"/>
+      <bone body="B_10" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="21 59" vertweight="1 1"/>
+      <bone body="B_11" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="22 60" vertweight="1 1"/>
+      <bone body="B_11" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="23 61" vertweight="1 1"/>
+      <bone body="B_12" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="24 62" vertweight="1 1"/>
+      <bone body="B_12" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="25 63" vertweight="1 1"/>
+      <bone body="B_13" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="26 64" vertweight="1 1"/>
+      <bone body="B_13" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="27 65" vertweight="1 1"/>
+      <bone body="B_14" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="28 66" vertweight="1 1"/>
+      <bone body="B_14" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="29 67" vertweight="1 1"/>
+      <bone body="B_15" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="30 68" vertweight="1 1"/>
+      <bone body="B_15" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="31 69" vertweight="1 1"/>
+      <bone body="B_16" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="32 70" vertweight="1 1"/>
+      <bone body="B_16" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="33 71" vertweight="1 1"/>
+      <bone body="B_17" bindpos="0 -0.015 0" bindquat="1 0 0 0" vertid="34 72" vertweight="1 1"/>
+      <bone body="B_17" bindpos="0 0.015 0" bindquat="1 0 0 0" vertid="35 73" vertweight="1 1"/>
+      <bone body="B_17" bindpos="-0.005 -0.015 0" bindquat="1 0 0 0" vertid="36 74" vertweight="1 1"/>
+      <bone body="B_17" bindpos="-0.005 0.015 0" bindquat="1 0 0 0" vertid="37 75" vertweight="1 1"/>
+    </skin>
+  </deformable>
+
+  <actuator>
+    <general name="adhesion" body="robot:ee_adhesion" ctrllimited="true" ctrlrange="0 1" gainprm="5"/>
+  </actuator>
+</mujoco>
