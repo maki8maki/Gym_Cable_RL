@@ -24,6 +24,8 @@ def main(_cfg: OmegaConf):
     success_num = 0
     for _ in range(10):
         obs, _ = env.reset()
+        frames.append(env.render())
+        titles.append("Step 0")
         success_num = 0
         for step in range(cfg.nsteps):
             obs = th.tensor(obs)
