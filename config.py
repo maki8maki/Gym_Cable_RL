@@ -20,6 +20,15 @@ from utils import set_seed
 from wrapper import FEWrapper
 
 
+def check_device(device: str) -> str:
+    if device == "cpu":
+        logging.warning("You are using CPU!!")
+    if device == "cuda" and not th.cuda.is_available():
+        device = "cpu"
+        logging.warning("Device changed to CPU!!")
+    return device
+
+
 @dataclasses.dataclass
 class FEConfig:
     img_width: int = 64
@@ -64,13 +73,6 @@ class TrainFEConfig:
     output_dir: str = dataclasses.field(default=None)
 
     def __post_init__(self, _env, log_name, seed):
-        if seed is not None:
-            set_seed(seed)
-        if self.device == "cpu":
-            logging.warning("You are using CPU!!")
-        if self.device == "cuda" and not th.cuda.is_available():
-            self.device = "cpu"
-            logging.warning("Device changed to CPU!!")
         if self.fe.model is not None:
             self.fe.model.to(self.device)
         if self.with_init:
@@ -85,6 +87,8 @@ class TrainFEConfig:
             posture_random = "r"
         else:
             posture_random = "s"
+        set_seed(self.seed)
+        self.device = check_device(self.device)
         self.basename += f"_{position_random}{posture_random}_{init}"
         self.data_name = f"{log_name}_{position_random}{posture_random}_{init}_{self.data_size}.npy"
         self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
@@ -129,13 +133,6 @@ class CombConfig:
     output_dir: str = dataclasses.field(default=None)
 
     def __post_init__(self, _env, _model, seed, _replay_buffer, fe_with_init):
-        if seed is not None:
-            set_seed(seed)
-        if self.device == "cpu":
-            logging.warning("You are using CPU!!")
-        if self.device == "cuda" and not th.cuda.is_available():
-            self.device = "cpu"
-            logging.warning("Device changed to CPU!!")
         if fe_with_init:
             init = "w-init"
         else:
@@ -150,6 +147,8 @@ class CombConfig:
             posture_random = "s"
         if _replay_buffer is None:
             self.replay_buffer = buffer.ReplayBuffer(memory_size=self.memory_size)
+        set_seed(self.seed)
+        self.device = check_device(self.device)
         self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
         self.basename += f"_{position_random}{posture_random}"
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
@@ -198,13 +197,6 @@ class SB3Config:
     output_dir: str = dataclasses.field(default=None)
 
     def __post_init__(self, _env, _model, fe_with_init):
-        if self.seed is not None:
-            set_seed(self.seed)
-        if self.device == "cpu":
-            logging.warning("You are using CPU!!")
-        if self.device == "cuda" and not th.cuda.is_available():
-            self.device = "cpu"
-            logging.warning("Device changed to CPU!!")
         if fe_with_init:
             init = "w-init"
         else:
@@ -217,6 +209,8 @@ class SB3Config:
             posture_random = "r"
         else:
             posture_random = "s"
+        set_seed(self.seed)
+        self.device = check_device(self.device)
         self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
         self.basename += f"_{position_random}{posture_random}"
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
