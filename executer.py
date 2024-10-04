@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from agents.buffer import PrioritizedReplayBuffer
 from agents.utils import Transition
-from config import CombConfig, TrainFEConfig
+from config import MODEL_DIR, CombConfig, TrainFEConfig
 from utils import EarlyStopping, anim, check_freq
 
 
@@ -33,7 +33,7 @@ class FEExecuter(Executer):
         self.env = cfg.env
         self.writer = SummaryWriter(log_dir=cfg.output_dir)
         self.cfg = cfg
-        model_path1 = os.path.join(os.getcwd(), "model", cfg.fe.model_name)
+        model_path1 = os.path.join(MODEL_DIR, cfg.fe.model_name)
         model_path2 = os.path.join(cfg.output_dir, cfg.fe.model_name)
         self.es = EarlyStopping(patience=self.cfg.es_patience, paths=[model_path1, model_path2], trace_func=tqdm.write)
         self.cfg.fe.model.train()

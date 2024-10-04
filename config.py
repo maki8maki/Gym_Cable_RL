@@ -19,6 +19,8 @@ from callback import MyEvalVallback, VideoRecordCallback
 from utils import set_seed
 from wrapper import FEWrapper
 
+MODEL_DIR = os.path.join(os.path.dirname(__file__), "model")
+
 
 def check_device(device: str) -> str:
     if device == "cpu":
@@ -159,7 +161,7 @@ class CombConfig:
 
         cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
         cfg.fe.model.to(cfg.device)
-        cfg.fe.model.load_state_dict(th.load(f"./model/{cfg.fe.model_name}", map_location=cfg.device))
+        cfg.fe.model.load_state_dict(th.load(os.path.join(MODEL_DIR, cfg.fe.model_name), map_location=cfg.device))
         th.save(cfg.fe.model.state_dict(), os.path.join(cfg.output_dir, cfg.fe.model_name))
 
         gym_cable.register_robotics_envs()
@@ -220,7 +222,7 @@ class SB3Config:
         cfg = dacite.from_dict(data_class=cls, data=OmegaConf.to_container(_cfg))
         cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
         cfg.fe.model.to(device=cfg.device)
-        cfg.fe.model.load_state_dict(th.load(f"./model/{cfg.fe.model_name}", map_location=cfg.device))
+        cfg.fe.model.load_state_dict(th.load(os.path.join(MODEL_DIR, cfg.fe.model_name), map_location=cfg.device))
         th.save(cfg.fe.model.state_dict(), os.path.join(cfg.output_dir, cfg.fe.model_name))
 
         gym_cable.register_robotics_envs()
