@@ -4,7 +4,6 @@ import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 import torch as th
-import torch.nn as nn
 
 
 def set_seed(seed):
@@ -79,7 +78,7 @@ class EarlyStopping:
             self.counter = 0
         return self.early_stop
 
-    def save_checkpoint(self, val_loss, model: nn.Module):
+    def save_checkpoint(self, val_loss, model):
         """Saves model when validation loss decrease."""
         if self.verbose:
             self.trace_func(
