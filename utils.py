@@ -47,7 +47,7 @@ def yes_no_input(check):
 
 
 def check_freq(total: int, current: int, num: int):
-    return (current + 1) % (total / num) == 0
+    return current % (total / num) == 0
 
 
 class EarlyStopping:

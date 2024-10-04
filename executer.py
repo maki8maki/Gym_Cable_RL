@@ -102,7 +102,7 @@ class FEExecuter(Executer):
         state = self.reset_get_state()
         test_x = th.tensor(state["image"]).to(self.cfg.device)
 
-        for epoch in tqdm(range(self.cfg.nepochs)):
+        for epoch in tqdm(range(1, self.cfg.nepochs + 1)):
             train_loss = []
             self.cfg.fe.model.train()
             for x in train_data:
@@ -122,14 +122,14 @@ class FEExecuter(Executer):
                     loss = self.cfg.fe.model.loss(x)
                     test_loss.append(loss.cpu().detach().numpy())
             test_loss = np.mean(test_loss)
-            self.writer.add_scalar("train/loss", train_loss, epoch + 1)
-            self.writer.add_scalar("test/loss", test_loss, epoch + 1)
+            self.writer.add_scalar("train/loss", train_loss, epoch)
+            self.writer.add_scalar("test/loss", test_loss, epoch)
             if check_freq(self.cfg.nepochs, epoch, self.cfg.save_recimg_num):
                 y = self.test(test_x)
-                self.writer.add_image("rgb/original", test_x[:3], epoch + 1)
-                self.writer.add_image("depth/original", test_x[3:], epoch + 1)
-                self.writer.add_image("rgb/reconstructed", y[:3], epoch + 1)
-                self.writer.add_image("depth/reconstructed", y[3:], epoch + 1)
+                self.writer.add_image("rgb/original", test_x[:3], epoch)
+                self.writer.add_image("depth/original", test_x[3:], epoch)
+                self.writer.add_image("rgb/reconstructed", y[:3], epoch)
+                self.writer.add_image("depth/reconstructed", y[3:], epoch)
             if self.es(test_loss, self.cfg.fe.model):
                 break
 
@@ -168,7 +168,7 @@ class CombExecuter(Executer):
     def train_loop(self, frames: list, titles: list):
         state, _ = self.env.reset()
         ep_rew, ep_len = 0, 0
-        for step in tqdm(range(self.cfg.total_steps)):
+        for step in tqdm(range(1, self.cfg.total_steps + 1)):
             if step >= self.cfg.start_steps:
                 action = self.cfg.model.get_action(state)
             else:
@@ -190,9 +190,9 @@ class CombExecuter(Executer):
             else:
                 state = transition.next_state
 
-            if step >= self.cfg.update_after and (step + 1) % self.cfg.update_every == 0:
+            if step >= self.cfg.update_after and step % self.cfg.update_every == 0:
                 for upc in range(self.cfg.update_every):
-                    num = step + 1 - (self.cfg.update_every - upc)
+                    num = step - (self.cfg.update_every - upc)
                     if isinstance(self.cfg.replay_buffer, PrioritizedReplayBuffer):
                         batch = self.cfg.replay_buffer.sample(self.cfg.batch_size, num)
                         loss = self.cfg.model.update_from_batch(batch)
@@ -232,9 +232,9 @@ class CombExecuter(Executer):
                 else:
                     state = transition.next_state
             steps += step + 1.0
-        self.writer.add_scalar("test/episode_reward", eval_reward / self.cfg.nevalepisodes, cur_step + 1)
-        self.writer.add_scalar("test/episode_length", steps / self.cfg.nevalepisodes, cur_step + 1)
-        self.writer.add_scalar("test/success_rate", success_num / self.cfg.nevalepisodes, cur_step + 1)
+        self.writer.add_scalar("test/episode_reward", eval_reward / self.cfg.nevalepisodes, cur_step)
+        self.writer.add_scalar("test/episode_length", steps / self.cfg.nevalepisodes, cur_step)
+        self.writer.add_scalar("test/success_rate", success_num / self.cfg.nevalepisodes, cur_step)
 
     def test_loop(self, frames: list, titles: list):
         self.cfg.model.eval()
