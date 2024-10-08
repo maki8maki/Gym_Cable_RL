@@ -10,8 +10,9 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from agents.buffer import PrioritizedReplayBuffer
+from agents.dataset import UnalignedDataset
 from agents.utils import Transition
-from config import MODEL_DIR, CombConfig, TrainFEConfig
+from config import MODEL_DIR, CombConfig, DAConfig, TrainFEConfig
 from utils import EarlyStopping, anim, check_freq
 
 
@@ -280,3 +281,84 @@ class CombExecuter(Executer):
         self.train()
         self.test()
         self.close()
+
+
+class DAExecuter:
+    def __init__(self, cfg: DAConfig) -> None:
+        self.cfg = cfg
+        self.writer = SummaryWriter(log_dir=cfg.output_dir)
+
+        self.sim_imgs = np.load(cfg.sim_data_path) * 2 - 1  # [0 1] -> [-1 1]
+        self.real_imgs = np.load(cfg.real_data_path) * 2 - 1
+
+        train_sim, test_sim = th_data.random_split(self.sim_imgs[:, : cfg.fe.img_channel], [0.8, 0.2])
+        train_real, test_real = th_data.random_split(self.real_imgs[:, : cfg.fe.img_channel], [0.8, 0.2])
+        train_dataset = UnalignedDataset(train_sim, train_real, True)
+        self.train_dataloader = th_data.DataLoader(dataset=train_dataset, batch_size=cfg.batch_size, shuffle=True)
+        self.train_data_size = len(train_dataset)
+        test_dataset = UnalignedDataset(test_sim, test_real, False)
+        self.test_dataloader = th_data.DataLoader(dataset=test_dataset, batch_size=cfg.batch_size, shuffle=False)
+        self.test_data_size = len(test_dataset)
+
+        model_path1 = os.path.join(MODEL_DIR, cfg.basename + ".pth")
+        model_path2 = os.path.join(cfg.output_dir, cfg.basename + ".pth")
+        self.es = EarlyStopping(patience=cfg.es_patience, paths=[model_path1, model_path2], trace_func=tqdm.write)
+
+        self.cfg.fe.model.eval()
+
+        self.make_aliases()
+
+    def make_aliases(self):
+        self.model = self.cfg.model
+
+    def train(self):
+        loss_keys = self.model.loss_names
+        for epoch in tqdm(range(1, self.cfg.nepochs + 1)):
+            train_loss = {key: 0.0 for key in loss_keys}
+            self.model.train()
+            for data in self.train_dataloader:
+                self.model.set_input(data)
+                self.model.optimize_parameters()
+                loss = self.model.get_current_losses()
+                for key, value in loss.items():
+                    train_loss[key] += value * len(self.model.real_A)
+
+            test_loss = {key: 0.0 for key in loss_keys}
+            self.model.eval()
+            with th.no_grad():
+                for data in self.test_dataloader:
+                    self.model.set_input(data)
+                    self.model.forward()
+                    self.model.calcurate_loss_G()
+                    self.model.calcurate_loss_D_A()
+                    self.model.calcurate_loss_D_B()
+                    loss = self.model.get_current_losses()
+                    for key, value in loss.items():
+                        test_loss[key] += value * len(self.model.real_A)
+
+            for key, value in train_loss.items():
+                self.writer.add_scalar(f"train/{key}", value / self.train_data_size, epoch)
+            for key, value in test_loss.items():
+                self.writer.add_scalar(f"test/{key}", value / self.test_data_size, epoch)
+
+            if check_freq(self.cfg.nepochs, epoch, self.cfg.save_recimg_num):
+                imgs = self.model.get_current_visuals()
+                for key, value in imgs.items():
+                    self.writer.add_image(f"rgb/{key}", value[0, :3], epoch)
+                    if self.cfg.fe.img_channel > 3:
+                        self.writer.add_image(f"depth/{key}", value[0, 3:], epoch)
+
+            if self.es(test_loss["G"], self.model):
+                break
+
+    def close(self):
+        self.writer.flush()
+        self.writer.close()
+
+    def __call__(self):
+        try:
+            self.train()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.close()

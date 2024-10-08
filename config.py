@@ -15,11 +15,13 @@ from stable_baselines3.common.monitor import Monitor
 
 import gym_cable
 from agents import buffer, utils
+from agents.CycleGAN import FeatureExtractionCycleGAN
 from callback import MyEvalVallback, VideoRecordCallback
 from utils import set_seed
 from wrapper import FEWrapper
 
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "model")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 
 def check_device(device: str) -> str:
@@ -252,4 +254,69 @@ class SB3Config:
             verbose=0,
         )
         cfg.callbacks = CallbackList([eval_callback, video_callback])
+        return cfg
+
+
+@dataclasses.dataclass
+class DAConfig:
+    fe: FEConfig
+    basename: str
+    _model: dataclasses.InitVar[dict]
+    real_data_path: str
+    sim_data_path: str = dataclasses.field(default=False)
+    model: FeatureExtractionCycleGAN = dataclasses.field(default=False)
+    log_name: dataclasses.InitVar[str] = "grasp_rgbd"
+    position_random: bool = dataclasses.field(default=False, repr=False)
+    posture_random: bool = dataclasses.field(default=False, repr=False)
+    fe_with_init: dataclasses.InitVar[bool] = dataclasses.field(default=True, repr=False)
+    data_size: dataclasses.InitVar[int] = 10000
+    nepochs: int = 100
+    es_patience: int = 10
+    batch_size: int = 128
+    device: str = "cpu"
+    seed: dataclasses.InitVar[int] = None
+    save_recimg_num: int = dataclasses.field(default=10, repr=False)
+    output_dir: str = dataclasses.field(default=None)
+
+    def __post_init__(self, _model, log_name, fe_with_init, data_size, seed):
+        if fe_with_init:
+            init = "w-init"
+        else:
+            init = "wo-init"
+        if self.position_random:
+            position_random = "r"
+        else:
+            position_random = "s"
+        if self.posture_random:
+            posture_random = "r"
+        else:
+            posture_random = "s"
+        set_seed(seed)
+        self.device = check_device(self.device)
+        self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
+
+        self.real_data_path = os.path.join(DATA_DIR, self.real_data_path)
+        self.sim_data_path = f"{log_name}_{position_random}{posture_random}_{init}_{data_size}.npy"
+        self.sim_data_path = os.path.join(DATA_DIR, self.sim_data_path)
+        self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+
+    @classmethod
+    def convert(cls, _cfg: OmegaConf):
+        cfg = dacite.from_dict(data_class=cls, data=OmegaConf.to_container(_cfg))
+
+        cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
+        cfg.fe.model.to(cfg.device)
+        cfg.fe.model.load_state_dict(th.load(os.path.join(MODEL_DIR, cfg.fe.model_name), map_location=cfg.device))
+        th.save(cfg.fe.model.state_dict(), os.path.join(cfg.output_dir, cfg.fe.model_name))
+
+        cfg.model = hydra.utils.instantiate(
+            _cfg._model,
+            fe=cfg.fe.model,
+            input_channel=cfg.fe.img_channel,
+            output_channel=cfg.fe.img_channel,
+            device=cfg.device,
+        )
+        cfg.model.setup(cfg.nepochs, cfg.nepochs)
+        cfg.model.to(cfg.device)
+
         return cfg
