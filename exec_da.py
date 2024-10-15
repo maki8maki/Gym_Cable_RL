@@ -4,6 +4,7 @@ import hydra
 import matplotlib.pyplot as plt
 import numpy as np
 import torch as th
+import torchvision.transforms as tf
 from omegaconf import OmegaConf
 
 from config import DAConfig
@@ -14,26 +15,22 @@ def main(_cfg: OmegaConf):
     cfg = DAConfig.convert(_cfg)
 
     model = cfg.model
-    model.load(os.path.join("logs", "FE_CycleGAN_VAE", "20241007-1347", "FE_CycleGAN_VAE.pth"))
+    model.load(os.path.join("logs", "FE_CycleGAN_VAE", "20241015-1601", "FE_CycleGAN_VAE.pth"))
     model.eval()
 
-    sim = np.load("data/sim.npy") * 2 - 1  # [0 1] -> [-1 1]
-    real = np.load("data/real.npy") * 2 - 1
+    sim = np.load("data/sim.npy").astype(np.float32)
+    real = np.load("data/real.npy").astype(np.float32)
 
+    t = tf.Compose([th.tensor])
     with th.no_grad():
-        model.set_input({"A": th.tensor(sim), "B": th.tensor(real)})
+        model.set_input({"A": t(sim), "B": t(real)})
         model.forward()
 
     fake_real = model.fake_B.cpu().squeeze().numpy().transpose(1, 2, 0) * 0.5 + 0.5
     fake_sim = model.fake_A.cpu().squeeze().numpy().transpose(1, 2, 0) * 0.5 + 0.5
 
-    sim = sim.squeeze().transpose(1, 2, 0) * 0.5 + 0.5
-    real = real.squeeze().transpose(1, 2, 0) * 0.5 + 0.5
-
-    print(sim.min(), sim.max())
-    print(fake_sim.min(), fake_sim.max())
-    print(real.min(), real.max())
-    print(fake_real.min(), fake_real.max())
+    sim = sim.squeeze().transpose(1, 2, 0)
+    real = real.squeeze().transpose(1, 2, 0)
 
     plt.axis("off")
     plt.imshow(sim[..., :3], vmin=0, vmax=1)
