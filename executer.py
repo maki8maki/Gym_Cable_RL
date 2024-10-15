@@ -51,9 +51,9 @@ class FEExecuter(Executer):
     def obs2state(self, obs, image_list=["rgb_image", "depth_image"]):
         normalized_obs = self.normalize_state(obs)
         if len(image_list) > 0:
-            image = normalized_obs[image_list[0]] * 0.5 + 0.5
+            image = normalized_obs[image_list[0]]
             for name in image_list[1:]:
-                image = np.concatenate([image, normalized_obs[name] * 0.5 + 0.5], axis=2)
+                image = np.concatenate([image, normalized_obs[name]], axis=2)
             state = {"observation": normalized_obs["observation"], "image": self.cfg.fe.trans(image)}
             return state
         else:
@@ -127,10 +127,10 @@ class FEExecuter(Executer):
             self.writer.add_scalar("test/loss", test_loss, epoch)
             if check_freq(self.cfg.nepochs, epoch, self.cfg.save_recimg_num):
                 y = self.test(test_x)
-                self.writer.add_image("rgb/original", test_x[:3], epoch)
-                self.writer.add_image("depth/original", test_x[3:], epoch)
-                self.writer.add_image("rgb/reconstructed", y[:3], epoch)
-                self.writer.add_image("depth/reconstructed", y[3:], epoch)
+                self.writer.add_image("rgb/original", test_x[:3] * 0.5 + 0.5, epoch)
+                self.writer.add_image("depth/original", test_x[3:] * 0.5 + 0.5, epoch)
+                self.writer.add_image("rgb/reconstructed", y[:3] * 0.5 + 0.5, epoch)
+                self.writer.add_image("depth/reconstructed", y[3:] * 0.5 + 0.5, epoch)
             if self.es(test_loss, self.cfg.fe.model):
                 break
 
@@ -288,15 +288,18 @@ class DAExecuter:
         self.cfg = cfg
         self.writer = SummaryWriter(log_dir=cfg.output_dir)
 
-        self.sim_imgs = np.load(cfg.sim_data_path) * 2 - 1  # [0 1] -> [-1 1]
-        self.real_imgs = np.load(cfg.real_data_path) * 2 - 1
+        self.sim_imgs = np.load(cfg.sim_data_path)
+        self.real_imgs = np.load(cfg.real_data_path)
+
+        np.save(os.path.join(cfg.output_dir, cfg.sim_data_path), self.sim_imgs)
+        np.save(os.path.join(cfg.output_dir, cfg.real_data_path), self.real_imgs)
 
         train_sim, test_sim = th_data.random_split(self.sim_imgs[:, : cfg.fe.img_channel], [0.8, 0.2])
         train_real, test_real = th_data.random_split(self.real_imgs[:, : cfg.fe.img_channel], [0.8, 0.2])
-        train_dataset = UnalignedDataset(train_sim, train_real, True)
+        train_dataset = UnalignedDataset(train_sim, train_real, random=True)
         self.train_dataloader = th_data.DataLoader(dataset=train_dataset, batch_size=cfg.batch_size, shuffle=True)
         self.train_data_size = len(train_dataset)
-        test_dataset = UnalignedDataset(test_sim, test_real, False)
+        test_dataset = UnalignedDataset(test_sim, test_real, random=False)
         self.test_dataloader = th_data.DataLoader(dataset=test_dataset, batch_size=cfg.batch_size, shuffle=False)
         self.test_data_size = len(test_dataset)
 
@@ -342,11 +345,10 @@ class DAExecuter:
                 self.writer.add_scalar(f"test/{key}", value / self.test_data_size, epoch)
 
             if check_freq(self.cfg.nepochs, epoch, self.cfg.save_recimg_num):
-                imgs = self.model.get_current_visuals()
-                for key, value in imgs.items():
-                    self.writer.add_image(f"rgb/{key}", value[0, :3], epoch)
+                for key, value in self.model.get_current_visuals().items():
+                    self.writer.add_image(f"rgb/{key}", value[0, :3] * 0.5 + 0.5, epoch)
                     if self.cfg.fe.img_channel > 3:
-                        self.writer.add_image(f"depth/{key}", value[0, 3:], epoch)
+                        self.writer.add_image(f"depth/{key}", value[0, 3:] * 0.5 + 0.5, epoch)
 
             if self.es(test_loss["G"], self.model):
                 break

@@ -41,9 +41,9 @@ class FEWrapper(gym.ObservationWrapper, gym.utils.RecordConstructorArgs):
     ) -> dict[str, np.ndarray]:
         normalized_obs = self.normalize_observation(obs)
         if len(image_list) > 0:
-            image = normalized_obs[image_list[0]] * 0.5 + 0.5  # [-1 1] -> [0 1]
+            image = normalized_obs[image_list[0]]
             for name in image_list[1:]:
-                image = np.concatenate([image, normalized_obs[name] * 0.5 + 0.5], axis=2)
+                image = np.concatenate([image, normalized_obs[name]], axis=2)
             image = th.tensor(self.trans(image), dtype=th.float, device=self.device)
             hs = self.model.forward(image.unsqueeze(0)).cpu().squeeze().detach().numpy()
             state = np.concatenate([hs, normalized_obs["observation"]])
