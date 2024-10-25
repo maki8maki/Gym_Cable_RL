@@ -353,6 +353,8 @@ class DAExecuter:
             if self.es(test_loss["G"], self.model):
                 break
 
+            self.model.update_learning_rate()
+
     def close(self):
         self.writer.flush()
         self.writer.close()
