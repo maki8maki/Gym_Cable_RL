@@ -52,4 +52,5 @@ class FEWrapper(gym.ObservationWrapper, gym.utils.RecordConstructorArgs):
             return normalized_obs["observation"]
 
     def observation(self, observation: gym.spaces.Dict) -> np.ndarray:
+        self.image = np.concatenate([observation["rgb_image"], observation["depth_image"]], axis=2)
         return self.convert_observation(observation)
