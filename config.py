@@ -263,13 +263,11 @@ class DAConfig:
     basename: str
     _model: dataclasses.InitVar[dict]
     real_data_path: str
-    sim_data_path: str = dataclasses.field(default=False)
+    sim_data_path: str
     model: FeatureExtractionCycleGAN = dataclasses.field(default=False)
-    log_name: dataclasses.InitVar[str] = "grasp_rgbd"
     position_random: bool = dataclasses.field(default=False, repr=False)
     posture_random: bool = dataclasses.field(default=False, repr=False)
     fe_with_init: dataclasses.InitVar[bool] = dataclasses.field(default=True, repr=False)
-    data_size: dataclasses.InitVar[int] = 10000
     nepochs: int = 100
     es_patience: int = 10
     batch_size: int = 128
@@ -278,7 +276,7 @@ class DAConfig:
     save_recimg_num: int = dataclasses.field(default=10, repr=False)
     output_dir: str = dataclasses.field(default=None)
 
-    def __post_init__(self, _model, log_name, fe_with_init, data_size, seed):
+    def __post_init__(self, _model, fe_with_init, seed):
         if fe_with_init:
             init = "w-init"
         else:
@@ -296,7 +294,6 @@ class DAConfig:
         self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
 
         self.real_data_path = os.path.join(DATA_DIR, self.real_data_path)
-        self.sim_data_path = f"{log_name}_{position_random}{posture_random}_{init}_{data_size}.npy"
         self.sim_data_path = os.path.join(DATA_DIR, self.sim_data_path)
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
