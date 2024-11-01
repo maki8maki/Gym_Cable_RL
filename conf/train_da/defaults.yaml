@@ -11,16 +11,15 @@ basename: FE_CycleGAN_VAE
 _model:
   _target_: agents.CycleGAN.FeatureExtractionCycleGAN
 
-real_data_path: real_rgbd_random.npy
+real_data_path: real_rgbd_policy.npy
+sim_data_path: grasp_rgbd_rr_wo-init_10000.npy
 
-log_name: grasp_rgbd
 position_random: False
 posture_random: False
 fe_with_init: True
-data_size: 10000
 
 nepochs: 300
-es_patience: 10
+es_patience: 30
 batch_size: 64
 
 device: cuda
