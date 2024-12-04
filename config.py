@@ -14,7 +14,7 @@ from stable_baselines3.common.callbacks import CallbackList
 from stable_baselines3.common.monitor import Monitor
 
 import gym_cable
-from agents import buffer, utils
+from agents import utils
 from agents.CycleGAN import FeatureExtractionCycleGAN
 from callback import MyEvalVallback, VideoRecordCallback
 from utils import set_seed
@@ -106,75 +106,6 @@ class TrainFEConfig:
 
         gym_cable.register_robotics_envs()
         cfg.env = gym.make(**_cfg._env)
-
-        return cfg
-
-
-@dataclasses.dataclass
-class CombConfig:
-    fe: FEConfig
-    basename: str
-    _env: dataclasses.InitVar[dict]
-    env: gym.Env = dataclasses.field(default=None)
-    _model: dataclasses.InitVar[dict] = None
-    model: utils.RL = dataclasses.field(default=None)
-    nsteps: int = dataclasses.field(default=100, repr=False)
-    position_random: bool = False
-    posture_random: bool = False
-    memory_size: int = 10000
-    start_steps: int = 10000
-    total_steps: int = 5e5
-    nevalepisodes: int = dataclasses.field(default=5, repr=False)
-    update_after: int = 1000
-    update_every: int = 50
-    batch_size: int = 50
-    eval_num: int = 1000
-    device: str = "cpu"
-    seed: dataclasses.InitVar[int] = None
-    _replay_buffer: dataclasses.InitVar[dict] = None
-    replay_buffer: buffer.Buffer = dataclasses.field(default=None)
-    fe_with_init: dataclasses.InitVar[bool] = True
-    output_dir: str = dataclasses.field(default=None)
-
-    def __post_init__(self, _env, _model, seed, _replay_buffer, fe_with_init):
-        if fe_with_init:
-            init = "w-init"
-        else:
-            init = "wo-init"
-        if self.position_random:
-            position_random = "r"
-        else:
-            position_random = "s"
-        if self.posture_random:
-            posture_random = "r"
-        else:
-            posture_random = "s"
-        if _replay_buffer is None:
-            self.replay_buffer = buffer.ReplayBuffer(memory_size=self.memory_size)
-        set_seed(self.seed)
-        self.device = check_device(self.device)
-        self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
-        self.basename += f"_{position_random}{posture_random}"
-        self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-
-    @classmethod
-    def convert(cls, _cfg: OmegaConf):
-        cfg = dacite.from_dict(data_class=cls, data=OmegaConf.to_container(_cfg))
-
-        cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
-        cfg.fe.model.to(cfg.device)
-        cfg.fe.model.load_state_dict(th.load(os.path.join(MODEL_DIR, cfg.fe.model_name), map_location=cfg.device))
-        th.save(cfg.fe.model.state_dict(), os.path.join(cfg.output_dir, cfg.fe.model_name))
-
-        gym_cable.register_robotics_envs()
-        env = gym.make(**_cfg._env)
-        cfg.env = FEWrapper(env=env, model=cfg.fe.model, trans=cfg.fe.trans)
-
-        obs_dim = cfg.env.observation_space.low.size
-        act_dim = cfg.env.action_space.low.size
-        cfg.model = hydra.utils.instantiate(_cfg._model, obs_dim=obs_dim, act_dim=act_dim)
-        cfg.model.to(cfg.device)
-        cfg.replay_buffer = hydra.utils.instantiate(_cfg._replay_buffer)
 
         return cfg
 

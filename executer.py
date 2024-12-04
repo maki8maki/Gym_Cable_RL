@@ -1,6 +1,4 @@
 import os
-import sys
-from typing import Union
 
 import gymnasium as gym
 import numpy as np
@@ -9,25 +7,16 @@ import torch.utils.data as th_data
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from agents.buffer import PrioritizedReplayBuffer
 from agents.dataset import UnalignedDataset
-from agents.utils import Transition
-from config import MODEL_DIR, CombConfig, DAConfig, TrainFEConfig
-from utils import EarlyStopping, anim, check_freq
+from config import MODEL_DIR, DAConfig, TrainFEConfig
+from utils import EarlyStopping, check_freq
 
 
-class Executer:
+class FEExecuter:
     env: gym.Env
-    cfg: Union[CombConfig, TrainFEConfig]
+    cfg: TrainFEConfig
     writer: SummaryWriter
 
-    def close(self):
-        self.env.close()
-        self.writer.flush()
-        self.writer.close()
-
-
-class FEExecuter(Executer):
     def __init__(self, cfg: TrainFEConfig):
         super().__init__()
 
@@ -140,146 +129,17 @@ class FEExecuter(Executer):
         y = y.squeeze()
         return y
 
+    def close(self):
+        self.env.close()
+        self.writer.flush()
+        self.writer.close()
+
     def __call__(self):
         self.gathering_data()
         try:
             self.train()
         except KeyboardInterrupt:
             pass
-        self.close()
-
-
-class CombExecuter(Executer):
-    def __init__(self, cfg: CombConfig):
-        super().__init__()
-
-        self.env = cfg.env
-        self.writer = SummaryWriter(log_dir=cfg.output_dir)
-        self.cfg = cfg
-        self.update_count = 1
-
-        self.cfg.fe.model.eval()
-        self.cfg.model.train()
-
-    def set_action(self, state: np.ndarray, action: np.ndarray) -> Transition:
-        next_state, reward, terminated, truncated, info = self.env.step(action)
-        transition = Transition(state, next_state, reward, action, terminated, truncated, info)
-        return transition
-
-    def train_loop(self, frames: list, titles: list):
-        state, _ = self.env.reset()
-        ep_rew, ep_len = 0, 0
-        for step in tqdm(range(1, self.cfg.total_steps + 1)):
-            if step >= self.cfg.start_steps:
-                action = self.cfg.model.get_action(state)
-            else:
-                action = self.env.action_space.sample()
-            transition = self.set_action(state, action)
-
-            ep_rew += transition.reward
-            ep_len += 1
-            is_timeout = ep_len == self.cfg.nsteps
-            transition.done = 0 if is_timeout else transition.done
-
-            self.cfg.replay_buffer.append(transition)
-
-            if transition.done or is_timeout:
-                self.writer.add_scalar("train/episode_reward", ep_rew, step)
-                self.writer.add_scalar("train/episode_length", ep_len, step)
-                state, _ = self.env.reset()
-                ep_rew, ep_len = 0, 0
-            else:
-                state = transition.next_state
-
-            if step >= self.cfg.update_after and step % self.cfg.update_every == 0:
-                for upc in range(self.cfg.update_every):
-                    num = step - (self.cfg.update_every - upc)
-                    if isinstance(self.cfg.replay_buffer, PrioritizedReplayBuffer):
-                        batch = self.cfg.replay_buffer.sample(self.cfg.batch_size, num)
-                        loss = self.cfg.model.update_from_batch(batch)
-                        self.cfg.replay_buffer.update_priority(loss.flatten())
-                    else:
-                        batch = self.cfg.replay_buffer.sample(self.cfg.batch_size)
-                        _ = self.cfg.model.update_from_batch(batch)
-                    for key in self.cfg.model.info.keys():
-                        self.writer.add_scalar("train/" + key, self.cfg.model.info[key], num)
-
-            if check_freq(self.cfg.total_steps, step, self.cfg.eval_num):
-                self.eval_loop(step, frames, titles)
-                self.cfg.model.train()
-
-    def eval_loop(self, cur_step: int, frames: list, titles: list):
-        self.cfg.model.eval()
-        eval_reward = 0.0
-        steps = 0.0
-        success_num = 0.0
-        for evalepisode in range(self.cfg.nevalepisodes):
-            save_frames = evalepisode == 0
-            state, _ = self.env.reset()
-            if save_frames:
-                frames.append(self.env.render())
-                titles.append(f"Step {cur_step+1}")
-            for step in range(self.cfg.nsteps):
-                action = self.cfg.model.get_action(state, deterministic=True)
-                transition = self.set_action(state, action)
-                eval_reward += transition.reward
-                if save_frames:
-                    frames.append(self.env.render())
-                    titles.append(f"Step {cur_step+1}")
-                if transition.done:
-                    if transition.success:
-                        success_num += 1.0
-                    break
-                else:
-                    state = transition.next_state
-            steps += step + 1.0
-        self.writer.add_scalar("test/episode_reward", eval_reward / self.cfg.nevalepisodes, cur_step)
-        self.writer.add_scalar("test/episode_length", steps / self.cfg.nevalepisodes, cur_step)
-        self.writer.add_scalar("test/success_rate", success_num / self.cfg.nevalepisodes, cur_step)
-
-    def test_loop(self, frames: list, titles: list):
-        self.cfg.model.eval()
-        state, _ = self.env.reset()
-        frames.append(self.env.render())
-        titles.append("Step 0")
-        for step in range(self.cfg.nsteps):
-            action = self.cfg.model.get_action(state, deterministic=True)
-            transition = self.set_action(state, action)
-            frames.append(self.env.render())
-            titles.append(f"Step {step+1}")
-            if transition.done:
-                break
-            else:
-                state = transition.next_state
-
-    def train(self):
-        frames = []
-        titles = []
-        anim_path = os.path.join(self.cfg.output_dir, f"{self.cfg.basename}-1.mp4")
-        try:
-            self.cfg.fe.model.eval()
-            self.cfg.model.train()
-            self.train_loop(frames=frames, titles=titles)
-        except KeyboardInterrupt:
-            self.cfg.model.save(os.path.join(self.cfg.output_dir, f"{self.cfg.basename}.pth"))
-            anim(frames, titles=titles, filename=anim_path, show=False)
-            sys.exit(1)
-        anim(frames, titles=titles, filename=anim_path, show=False)
-
-    def test(self):
-        frames = []
-        titles = []
-        for _ in range(10):
-            self.test_loop(frames=frames, titles=titles)
-        anim(
-            frames, titles=titles, filename=os.path.join(self.cfg.output_dir, f"{self.cfg.basename}-2.mp4"), show=False
-        )
-        self.cfg.model.save(os.path.join(os.getcwd(), "model", f"{self.cfg.basename}.pth"))
-        self.cfg.model.save(os.path.join(self.cfg.output_dir, f"{self.cfg.basename}.pth"))
-
-    def __call__(self):
-        self.train()
-        self.test()
         self.close()
 
 
