@@ -17,7 +17,14 @@ from utils import anim
 gym_cable.register_robotics_envs()
 
 
+def tensorevent2value(te: TensorEvent):
+    proto = te.tensor_proto
+    return MessageToDict(proto)["floatVal"]
+
+
 def playback(log_dir, length=0):
+    np.set_printoptions(precision=5, suppress=True)
+
     log_files = [path for path in Path(log_dir).glob("**/events*") if path.is_file()]
 
     size_guidance = DEFAULT_SIZE_GUIDANCE
@@ -29,16 +36,26 @@ def playback(log_dir, length=0):
         event = EventAccumulator(str(log_file), size_guidance=size_guidance)
         event.Reload()
 
-        tes: list[TensorEvent] = event.Tensors("action")
+        ac_tes: list[TensorEvent] = event.Tensors("action")
+        pos_tes: list[TensorEvent] = event.Tensors("position")
 
-        env = gym.make("MZ04CableGrasp-v0", render_mode="rgb_array", position_random=False, posture_random=False)
-        env.reset()
+        env = gym.make(
+            "MZ04CableGrasp-v0",
+            render_mode="rgb_array",
+            position_random=False,
+            posture_random=False,
+            with_continuous=True,
+        )
+        obs, _ = env.reset()
+        next_obs = obs
 
         imgs = [env.render()]
-        for te in tes:
-            tensor_proto = te.tensor_proto
-            action = MessageToDict(tensor_proto)["floatVal"]
-            env.step(action)
+        for ac_te, pos_te in zip(ac_tes, pos_tes):
+            action = np.array(tensorevent2value(ac_te))
+            position = np.array(tensorevent2value(pos_te))
+            print("real  :", position)
+            print("sim   :", next_obs["observation"])
+            next_obs, _, _, _, _ = env.step(action)
             img = env.render()
             imgs.append(img)
 
@@ -49,5 +66,5 @@ def playback(log_dir, length=0):
 
 
 if __name__ == "__main__":
-    log_dir = "logs/real/SB3_SAC_trainedVAE/20240705-2028/"
+    log_dir = "logs/real/SB3_DA_SAC_trainedVAE/20241114-1948"
     playback(log_dir)
