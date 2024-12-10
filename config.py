@@ -64,7 +64,6 @@ class TrainFEConfig:
     nsteps: int = dataclasses.field(default=100, repr=False)
     position_random: bool = False
     posture_random: bool = False
-    cable_random: bool = False
     batch_size: int = 128
     nepochs: int = 500
     es_patience: int = 10
@@ -92,17 +91,11 @@ class TrainFEConfig:
             posture_random = "r"
         else:
             posture_random = "s"
-        if self.cable_random:
-            cable_random = "r"
-        else:
-            cable_random = "s"
         set_seed(self.seed)
         self.device = check_device(self.device)
         self.basename += f"_{position_random}{posture_random}_{init}"
         self.data_name = f"{log_name}_{position_random}{posture_random}_{init}_{self.data_size}.npy"
-        self.fe.model_name = self.fe.model_name.replace(
-            ".pth", f"_{position_random}{posture_random}{cable_random}_{init}.pth"
-        )
+        self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 
     @classmethod
@@ -127,7 +120,6 @@ class SB3Config:
     nsteps: int = 100
     position_random: bool = False
     posture_random: bool = False
-    cable_random: bool = False
     fe_with_init: dataclasses.InitVar[bool] = True
     device: str = "cpu"
     total_steps: int = 5e5
@@ -152,15 +144,9 @@ class SB3Config:
             posture_random = "r"
         else:
             posture_random = "s"
-        if self.cable_random:
-            cable_random = "r"
-        else:
-            cable_random = "s"
         set_seed(self.seed)
         self.device = check_device(self.device)
-        self.fe.model_name = self.fe.model_name.replace(
-            ".pth", f"_{position_random}{posture_random}{cable_random}_{init}.pth"
-        )
+        self.fe.model_name = self.fe.model_name.replace(".pth", f"_{position_random}{posture_random}_{init}.pth")
         self.basename += f"_{position_random}{posture_random}"
         self.output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
 

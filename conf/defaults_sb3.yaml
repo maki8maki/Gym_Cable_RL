@@ -14,7 +14,6 @@ _env:
   max_episode_steps: ${nsteps}
   position_random: ${position_random}
   posture_random: ${posture_random}
-  cable_random: ${cable_random}
   with_continuous: False
 
 _model:
@@ -25,7 +24,6 @@ _model:
 nsteps: 100
 position_random: False
 posture_random: False
-cable_random: False
 fe_with_init: True
 device: cuda
 total_steps: 500000
