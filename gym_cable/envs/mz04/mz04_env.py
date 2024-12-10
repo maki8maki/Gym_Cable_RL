@@ -27,8 +27,10 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             target_offset: np.ndarray,
             obj_position_range: float,
             obj_posture_range: float,
+            cable_width_range: np.ndarray,
             position_random: bool,
             posture_random: bool,
+            cable_random: bool,
             with_continuous: bool,
             distance_threshold: float,
             rotation_threshold: float,
@@ -50,8 +52,10 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             self.target_offset = target_offset
             self.obj_position_range = obj_position_range
             self.obj_posture_range = obj_posture_range
+            self.cable_width_range = cable_width_range
             self.position_random = position_random
             self.posture_random = posture_random
+            self.cable_random = cable_random
             self.with_continuous = with_continuous
             self.distance_threshold = distance_threshold
             self.rotation_threshold = rotation_threshold
@@ -227,6 +231,27 @@ class MujocoMZ04Env(get_base_mz04_env(MujocoRobotEnv)):
         if self.posture_random:
             diff = self.np_random.uniform(0, self.obj_posture_range)
             self.model.body("B_11").quat = rotations.euler2quat(np.deg2rad(np.array([180, 90 - diff, 0])))
+        if self.cable_random:
+            w = self.np_random.uniform(self.cable_width_range[0], self.cable_width_range[1])
+
+            # ケーブル
+            id = 0
+            while True:
+                try:
+                    self.model.geom("G" + str(id)).size[1] = w
+                    id += 1
+                except KeyError:
+                    break
+            boneadr = self.model.skin("Skin").boneadr[0]
+            bonenum = self.model.skin("Skin").bonenum[0]
+            for i in range(bonenum):
+                self.model.skin_bonebindpos[boneadr + i][1] = w * ((-1) ** (i % 2 + 1))
+
+            # コネクタ
+            self.model.geom("connector").size[1] = w + 0.0017
+
+            # 基板
+            self.model.geom("board").size[1] = self.np_random.uniform(w + 0.005, w * 2 + 0.005)
 
         self._mujoco.mj_forward(self.model, self.data)
         return True
