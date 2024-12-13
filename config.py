@@ -91,7 +91,7 @@ class TrainFEConfig:
             posture_random = "r"
         else:
             posture_random = "s"
-        set_seed(self.seed)
+        set_seed(seed)
         self.device = check_device(self.device)
         self.basename += f"_{position_random}{posture_random}_{init}"
         self.data_name = f"{log_name}_{position_random}{posture_random}_{init}_{self.data_size}.npy"
