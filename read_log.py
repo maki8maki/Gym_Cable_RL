@@ -49,6 +49,25 @@ def plot(log_dir, tagnames=None, title=None, xlabel=None, ylabel=None, filename=
                 plt.show()
 
 
+def save(log_dir, tagnames=None):
+    log_files = [path for path in Path(log_dir).glob("**/*") if path.is_file()]
+
+    for log_file in log_files:
+        event = EventAccumulator(str(log_file))
+        event.Reload()
+
+        tags = event.Tags()["scalars"]
+
+        for tag in tags:
+            if tagnames is not None and tag not in tagnames:
+                continue
+            scalars: list[ScalarEvent] = event.Scalars(tag)
+            value = []
+            for scalar in scalars:
+                value.append(scalar.value)
+            np.save(os.path.join("logs", tag.replace("/", "_")), value)
+
+
 def show_image(log_dir, tagnames=None, is_save=False, log_length=0):
     log_files = [path for path in Path(log_dir).glob("**/*") if path.is_file()]
 
