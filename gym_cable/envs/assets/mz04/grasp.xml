@@ -58,10 +58,7 @@
 				<body name="board" pos="0.013 0 0.00075">
 					<geom name="board" size="0.013 0.02 0.00075" class="board"></geom>
 					<body name="connector" pos="-0.013 0 0.00075">
-						<geom name="connector_l" size="0.0025 0.0007 0.0006" pos="0.0025 0.0160 0.0006" class="connector"></geom>
-						<geom name="connector_r" size="0.0025 0.0007 0.0006" pos="0.0025 -0.0160 0.0006" class="connector"></geom>
-						<geom name="connector_u" size="0.0025 0.0167 0.0004" pos="0.0025 0 0.0016" class="connector"></geom>
-						<geom name="connector_b" size="0.00125 0.0167 0.0006" pos="0.00375 0 0.0006" class="connector"></geom>
+						<geom name="connector" size="0.0025 0.0167 0.001" pos="0.0025 0 0.001" class="connector"></geom>
 					</body>
 				</body>
 			</body>

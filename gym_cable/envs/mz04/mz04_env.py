@@ -33,6 +33,8 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             distance_threshold: float,
             rotation_threshold: float,
             rot_weight: float,
+            cable_width: float = None,
+            circuit_width: float = None,
             **kwargs,
         ):
             """Initializes a new MZ04 environment.
@@ -60,6 +62,29 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             n_actions = 6
 
             super().__init__(n_actions=n_actions, **kwargs)
+
+            # *** ケーブル等の寸法のみを変更 ***
+            if cable_width is not None and circuit_width is not None:
+                w = cable_width / 2
+
+                # ケーブル
+                id = 0
+                while True:
+                    try:
+                        self.model.geom("G" + str(id)).size[1] = w
+                        id += 1
+                    except KeyError:
+                        break
+                boneadr = self.model.skin("Skin").boneadr[0]
+                bonenum = self.model.skin("Skin").bonenum[0]
+                for i in range(bonenum):
+                    self.model.skin_bonebindpos[boneadr + i][1] = w * ((-1) ** (i % 2 + 1))
+
+                # コネクタ
+                self.model.geom("connector").size[1] = w + 0.0017
+
+                # 基板
+                self.model.geom("board").size[1] = circuit_width / 2
 
         # GoalEnv methods
         # ----------------------------
