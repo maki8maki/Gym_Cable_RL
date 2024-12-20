@@ -75,6 +75,8 @@ class TrainFEConfig:
     data_name: str = dataclasses.field(default=None)
     save_recimg_num: int = dataclasses.field(default=10, repr=False)
     output_dir: str = dataclasses.field(default=None)
+    continue_train: bool = False
+    traind_model_name: str = None
 
     def __post_init__(self, _env, log_name, seed):
         if self.fe.model is not None:
@@ -103,6 +105,11 @@ class TrainFEConfig:
         cfg = dacite.from_dict(data_class=cls, data=OmegaConf.to_container(_cfg))
         cfg.fe = cfg.fe.convert(OmegaConf.create(_cfg.fe))
         cfg.fe.model.to(cfg.device)
+        if cfg.continue_train and cfg.traind_model_name is not None:
+            cfg.fe.model.load_state_dict(
+                th.load(os.path.join(MODEL_DIR, cfg.traind_model_name), map_location=cfg.device)
+            )
+            th.save(cfg.fe.model.state_dict(), os.path.join(cfg.output_dir, "trained_" + cfg.traind_model_name))
 
         gym_cable.register_robotics_envs()
         cfg.env = gym.make(**_cfg._env)
@@ -130,6 +137,8 @@ class SB3Config:
     model: BaseAlgorithm = dataclasses.field(default=None)
     callbacks: CallbackList = dataclasses.field(default=None, repr=False)
     output_dir: str = dataclasses.field(default=None)
+    continue_train: bool = False
+    traind_model_name: str = None
 
     def __post_init__(self, _env, _model, fe_with_init):
         if fe_with_init:
@@ -164,6 +173,9 @@ class SB3Config:
         cfg.model = hydra.utils.instantiate(
             _cfg._model, env=cfg.env, tensorboard_log=cfg.output_dir, seed=cfg.seed, device=cfg.device
         )
+        if cfg.continue_train and cfg.traind_model_name is not None:
+            cfg.model.load(os.path.join(MODEL_DIR, cfg.traind_model_name))
+            cfg.model.save(os.path.join(cfg.output_dir, "trained_" + cfg.traind_model_name))
         eval_callback = MyEvalVallback(
             eval_env=Monitor(cfg.env),
             n_eval_episodes=cfg.nevalepisodes,
@@ -206,6 +218,8 @@ class DAConfig:
     seed: dataclasses.InitVar[int] = None
     save_recimg_num: int = dataclasses.field(default=10, repr=False)
     output_dir: str = dataclasses.field(default=None)
+    continue_train: bool = False
+    traind_model_name: str = None
 
     def __post_init__(self, _model, fe_with_init, seed):
         if fe_with_init:
@@ -244,6 +258,9 @@ class DAConfig:
             output_channel=cfg.fe.img_channel,
             device=cfg.device,
         )
+        if cfg.continue_train and cfg.traind_model_name is not None:
+            cfg.model.load(os.path.join(MODEL_DIR, cfg.traind_model_name))
+            cfg.model.save(os.path.join(cfg.output_dir, "trained_" + cfg.traind_model_name))
         cfg.model.setup(cfg.nepochs, cfg.nepochs)
         cfg.model.to(cfg.device)
 
