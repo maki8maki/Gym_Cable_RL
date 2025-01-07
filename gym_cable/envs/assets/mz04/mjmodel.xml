@@ -278,8 +278,8 @@
                   <geom name="robot:j6_link" mesh="robot:j6_link"/>
                   <body name="robot:end_effector_link" pos="0.362 0 0.625" quat="0.707107 0 -0.707107 0">
                     <site name="robot:end_effector" pos="0.085 0 -0.039" size="0.002" rgba="1 0 1 0"/>
-                    <camera name="robot:camera" pos="0.101 0.009 0.095" quat="0.707107 0 0 -0.707107" fovy="58"/>
-                    <camera name="robot:camera_right" pos="0.101 -0.009 0.095" quat="0.707107 0 0 -0.707107" fovy="58"/>
+                    <camera name="robot:camera" pos="0.111 0.009 0.095" quat="0.707107 0 0 -0.707107" fovy="58"/>
+                    <camera name="robot:camera_right" pos="0.111 -0.009 0.095" quat="0.707107 0 0 -0.707107" fovy="58"/>
                     <body name="robot:end_effector" pos="-0.03 -0.03 0">
                       <geom mesh="robot:end_effector"/>
                       <geom class="visual" material="Opaque(176,176,176)" mesh="EndEffector_0"/>
