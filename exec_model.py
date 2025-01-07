@@ -14,7 +14,7 @@ def main(_cfg: OmegaConf):
     cfg = TrainFEConfig.convert(_cfg)
     print(f"\n{cfg}\n")
 
-    executer = FEExecuter(env_name="MZ04CableGrasp-v0", cfg=cfg)
+    executer = FEExecuter(cfg=cfg)
     del cfg, _cfg
 
     executer.cfg.fe.model.load_state_dict(
@@ -26,22 +26,30 @@ def main(_cfg: OmegaConf):
     x = th.tensor(state["image"]).to(executer.cfg.device)
     y = executer.test(x)
 
-    x = x.cpu().squeeze().detach().numpy().transpose(1, 2, 0)
-    y = y.cpu().squeeze().detach().numpy().transpose(1, 2, 0)
+    x = x.cpu().squeeze().detach().numpy().transpose(1, 2, 0) * 0.5 + 0.5
+    y = y.cpu().squeeze().detach().numpy().transpose(1, 2, 0) * 0.5 + 0.5
 
+    fig, _ = plt.subplots(figsize=(x.shape[1] / 10, x.shape[0] / 10))
     plt.axis("off")
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     plt.imshow(x[..., :3])
     plt.show()
 
+    fig, _ = plt.subplots(figsize=(x.shape[1] / 10, x.shape[0] / 10))
     plt.axis("off")
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     plt.imshow(x[..., 3:], cmap="gray")
     plt.show()
 
+    fig, _ = plt.subplots(figsize=(x.shape[1] / 10, x.shape[0] / 10))
     plt.axis("off")
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     plt.imshow(y[..., :3])
     plt.show()
 
+    fig, _ = plt.subplots(figsize=(x.shape[1] / 10, x.shape[0] / 10))
     plt.axis("off")
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     plt.imshow(y[..., 3:], cmap="gray")
     plt.show()
 
