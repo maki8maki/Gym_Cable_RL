@@ -68,7 +68,7 @@ def save(log_dir, tagnames=None):
             np.save(os.path.join("logs", tag.replace("/", "_")), value)
 
 
-def show_image(log_dir, tagnames=None, is_save=False, log_length=0):
+def show_image(log_dir, tagnames=None, is_save=False, log_length=0, index=-1):
     log_files = [path for path in Path(log_dir).glob("**/*") if path.is_file()]
 
     size_guidance = DEFAULT_SIZE_GUIDANCE
@@ -84,14 +84,14 @@ def show_image(log_dir, tagnames=None, is_save=False, log_length=0):
             if tagnames is not None and tag not in tagnames:
                 continue
             imgs: list[ImageEvent] = event.Images(tag)
-            img = tf.image.decode_image(imgs[-1].encoded_image_string).numpy()
+            img = tf.image.decode_image(imgs[index].encoded_image_string).numpy()
             fig, _ = plt.subplots(figsize=(img.shape[1] / 10, img.shape[0] / 10))
             plt.imshow(img, vmin=0, vmax=255)
             plt.axis("off")
             fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
             if is_save:
-                plt.savefig(os.path.join("logs", tag.replace("/", "_") + ".pdf"))
+                plt.savefig(os.path.join("logs", tag.replace("/", "_") + f"_{index}.pdf"))
 
             plt.show()
 
