@@ -135,8 +135,8 @@ def get_base_mz04_env(RobotEnvClass: MujocoRobotEnv):
             action = action.copy()  # ensure that we don't change the action outside of this scope
             pos_ctrl, rot_ctrl = action[:3], action[3:]
 
-            pos_ctrl *= 0.05  # limit maximum change in position
-            rot_ctrl *= np.deg2rad(10)  # limit maximum change in rotation
+            pos_ctrl *= 0.01  # limit maximum change in position
+            rot_ctrl *= np.deg2rad(5)  # limit maximum change in rotation
 
             quat_ctrl = rotations.euler2quat(rot_ctrl)
             action = np.concatenate([pos_ctrl, quat_ctrl])
