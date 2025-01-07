@@ -1,6 +1,7 @@
 import os
 
 import hydra
+import numpy as np
 import torch as th
 from omegaconf import OmegaConf
 
@@ -33,6 +34,7 @@ def main(_cfg: OmegaConf):
             next_obs, _, terminated, truncated, info = env.step(action)
             frames.append(env.render())
             titles.append(f"Step {step+1}")
+            print(info["is_success"], np.linalg.norm(action) / np.sqrt(6))
             if info["is_success"]:
                 success_num += 1
             if terminated or truncated:
