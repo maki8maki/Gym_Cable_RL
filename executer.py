@@ -26,7 +26,9 @@ class FEExecuter:
         model_path1 = os.path.join(MODEL_DIR, cfg.fe.model_name)
         model_path2 = os.path.join(cfg.output_dir, cfg.fe.model_name)
         self.es = EarlyStopping(patience=self.cfg.es_patience, paths=[model_path1, model_path2], trace_func=tqdm.write)
-        self.cfg.fe.model.train()
+
+        self.model = self.cfg.fe.model  # alias
+        self.model.train()
 
     def normalize_state(self, state):
         # 連続値の状態を[-1,1]の範囲に正規化
@@ -92,40 +94,46 @@ class FEExecuter:
         state = self.reset_get_state()
         test_x = th.tensor(state["image"]).to(self.cfg.device)
 
+        loss_keys = self.model.loss_names
+
         for epoch in tqdm(range(1, self.cfg.nepochs + 1)):
-            train_loss = []
-            self.cfg.fe.model.train()
+            train_loss = {key: 0.0 for key in loss_keys}
+            self.model.train()
             for x in train_data:
                 x = x.to(self.cfg.device)
-                loss = self.cfg.fe.model.loss(x)
-                self.cfg.fe.model.optim.zero_grad()
+                loss = self.model.loss(x)
+                self.model.optim.zero_grad()
                 loss.backward()
-                self.cfg.fe.model.optim.step()
-                train_loss.append(loss.cpu().detach().numpy())
-            train_loss = np.mean(train_loss)
+                self.model.optim.step()
+                loss = self.model.get_current_losses()
+                for key, value in loss.items():
+                    train_loss[key] += value
 
-            test_loss = []
-            self.cfg.fe.model.eval()
+            test_loss = {key: 0.0 for key in loss_keys}
+            self.model.eval()
             with th.no_grad():
                 for x in test_data:
                     x = x.to(self.cfg.device)
-                    loss = self.cfg.fe.model.loss(x)
-                    test_loss.append(loss.cpu().detach().numpy())
-            test_loss = np.mean(test_loss)
-            self.writer.add_scalar("train/loss", train_loss, epoch)
-            self.writer.add_scalar("test/loss", test_loss, epoch)
+                    self.model.loss(x)
+                    loss = self.model.get_current_losses()
+                    for key, value in loss.items():
+                        test_loss[key] += value
+            for key, value in train_loss.items():
+                self.writer.add_scalar(f"train/{key}", value / len(train_data), epoch)
+            for key, value in test_loss.items():
+                self.writer.add_scalar(f"test/{key}", value / len(test_data), epoch)
             if check_freq(self.cfg.nepochs, epoch, self.cfg.save_recimg_num):
                 y = self.test(test_x)
                 self.writer.add_image("rgb/original", test_x[:3] * 0.5 + 0.5, epoch)
                 self.writer.add_image("depth/original", test_x[3:] * 0.5 + 0.5, epoch)
                 self.writer.add_image("rgb/reconstructed", y[:3] * 0.5 + 0.5, epoch)
                 self.writer.add_image("depth/reconstructed", y[3:] * 0.5 + 0.5, epoch)
-            if self.es(test_loss, self.cfg.fe.model):
+            if self.es(test_loss["loss"], self.model):
                 break
 
     def test(self, x: th.Tensor):
         test_x = x.unsqueeze(0)
-        _, y = self.cfg.fe.model.forward(test_x, return_pred=True)
+        _, y = self.model.forward(test_x, return_pred=True)
         y = y.squeeze()
         return y
 
