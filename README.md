@@ -18,27 +18,27 @@
 
 ## ファイル構成
 
-* agents
+* agents/
   * モデルの定義
   * [agentsリポジトリ](https://github.com/maki8maki/agents)をサブモジュールとしたフォルダ
   * [CycleGANリポジトリ](https://github.com/maki8maki/pytorch-CycleGAN-and-pix2pix.git)をサブモジュールとして持つ
-* conf
+* conf/
   * パラメータファイルを格納する
   * 直下には動作学習に関するパラメータを格納
-  * fe
+  * fe/
     * 特徴量抽出モデル自体の定義に関するパラメータ
-  * train_da
+  * train_da/
     * ドメイン適応の学習に関するパラメータ
-  * train_fe
+  * train_fe/
     * 特徴量抽出の学習に関するパラメータ
-* data
+* data/
   * 特徴量抽出やドメイン適応の学習に使用する画像データを格納
-* gym_cable
+* gym_cable/
   * シミュレーション環境の定義
   * `envs/assets/*/stl`にマニピュレータなどのモデルファイルを格納
-* logs
+* logs/
   * 学習や実行のログを格納
-* model
+* model/
   * 最新のモデルのパラメータファイルを格納
   * 新しく学習が実行されると上書きされるので注意
     * 学習を途中で中止した場合は、その時点でのパラメータが保存される
