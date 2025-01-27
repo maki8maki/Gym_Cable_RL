@@ -48,7 +48,7 @@ def main(_cfg: OmegaConf):
             else:
                 obs = next_obs
 
-    np.savez("data/blue/execute", ac=ac_norms, pos=pos_err, ori=ori_err)
+    np.savez("data/execute", ac=ac_norms, pos=pos_err, ori=ori_err)
     env.close()
 
 
