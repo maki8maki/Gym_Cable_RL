@@ -20,7 +20,7 @@
 
 * agents
   * モデルの定義
-  * [agentsリポジトリ](https://github.com/maki8maki/agents)をサブモジュールとした
+  * [agentsリポジトリ](https://github.com/maki8maki/agents)をサブモジュールとしたフォルダ
   * [CycleGANリポジトリ](https://github.com/maki8maki/pytorch-CycleGAN-and-pix2pix.git)をサブモジュールとして持つ
 * conf
   * パラメータファイルを格納する
