@@ -5,6 +5,8 @@
 
 ## 使い方
 
+* 必要なライブラリのインストール
+  * `pip install -r requirements.txt`
 * conf/**/*.yamlにパラメータを書く
   * 書き方は各フォルダのdefaults.yamlを参照する
 * 実行ファイルでパラメータファイルを指定し、学習を開始する
